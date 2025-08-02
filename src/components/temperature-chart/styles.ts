@@ -1,12 +1,14 @@
-import { StyleSheet, Dimensions } from "react-native"
 
-const { width } = Dimensions.get("window")
+import { StyleSheet, Dimensions } from "react-native";
+
+const { width } = Dimensions.get("window");
+
+export const maxBarHeight = 120;
 
 export default StyleSheet.create({
   container: {
-    backgroundColor: "white",
     marginHorizontal: width * 0.05,
-    marginVertical: 20,
+    marginBottom: 20,
     borderRadius: 15,
     padding: width * 0.05,
     elevation: 4,
@@ -15,57 +17,97 @@ export default StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
+  header: {
+    marginBottom: 15,
+  },
   title: {
     fontSize: width * 0.045,
     fontWeight: "600",
-    color: "#333",
-    marginBottom: 15,
-    textAlign: "center",
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: width * 0.032,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+    backgroundColor: 'rgba(0,0,0,0.03)',
+  },
+  statItem: {
+    alignItems: 'center',
+  },
+  statLabel: {
+    fontSize: width * 0.03,
+    marginBottom: 2,
+  },
+  statValue: {
+    fontSize: width * 0.038,
+    fontWeight: '600',
   },
   scrollContent: {
-    alignItems: "flex-end",
-    minHeight: Math.max(120, width * 0.3),
     paddingHorizontal: 10,
   },
   chartContent: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    minWidth: width * 0.8,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    minHeight: maxBarHeight + 60,
   },
-  chartBar: {
-    alignItems: "center",
+  yAxisLabels: {
+    justifyContent: 'space-between',
+    height: maxBarHeight + 20,
+    marginRight: 10,
+    paddingTop: 20,
+  },
+  yAxisLabel: {
+    fontSize: width * 0.028,
+    textAlign: 'right',
+  },
+  chartContainer: {
+    position: 'relative',
     flex: 1,
-    maxWidth: width * 0.1,
-    marginHorizontal: width * 0.02,
+    height: maxBarHeight + 60,
+  },
+  svgChart: {
+    position: 'absolute',
+    top: 20,
+    left: 0,
+  },
+  labelsContainer: {
+    position: 'relative',
+    height: maxBarHeight + 60,
+  },
+  chartPoint: {
+    position: 'absolute',
+    alignItems: 'center',
+    width: 40,
+    top: 0,
   },
   chartValue: {
-    fontSize: width * 0.025,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 5,
+    fontSize: width * 0.028,
+    fontWeight: '500',
+    marginBottom: 8,
+    textAlign: 'center',
   },
-  bar: {
-    width: Math.max(15, width * 0.04),
-    borderRadius: 10,
-    marginBottom: 5,
-  },
+
   chartDate: {
-    fontSize: width * 0.022,
-    color: "#666",
+    fontSize: width * 0.024,
+    marginTop: 8,
+    textAlign: 'center',
+    lineHeight: 14,
   },
   errorBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#FFF5F5",
+    flexDirection: 'row',
+    alignItems: 'center',
     padding: 8,
-    borderRadius: 8,
-    marginBottom: 10,
+    borderRadius: 6,
+    marginBottom: 15,
   },
   errorBannerText: {
-    fontSize: width * 0.03,
-    color: "#FF6B6B",
-    marginLeft: 5,
+    fontSize: width * 0.032,
+    marginLeft: 6,
   },
   noDataContainer: {
     alignItems: "center",
@@ -74,10 +116,28 @@ export default StyleSheet.create({
   },
   noDataText: {
     fontSize: width * 0.035,
-    color: "#999",
     marginTop: 10,
     textAlign: "center",
   },
-})
-
-export const maxBarHeight = width * 0.15
+  legendContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    marginTop: 15,
+    paddingTop: 15,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(0,0,0,0.1)",
+  },
+  legendItem: {
+    alignItems: "center",
+    flexDirection: 'row',
+  },
+  legendDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 4,
+  },
+  legendLabel: {
+    fontSize: width * 0.03,
+  },
+});

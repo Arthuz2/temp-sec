@@ -1,4 +1,5 @@
-import { ScrollView, RefreshControl, View } from "react-native";
+import { ScrollView, RefreshControl, View, Text } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { getAllTemperature } from "../../api/getAllTemperature";
@@ -9,10 +10,11 @@ import { ErrorCard } from "../../components/error-card";
 import { CurrentTemperatureCard } from "../../components/current-temperature-card";
 import { StatsContainer } from "../../components/stats-container";
 import { TemperatureChart } from "../../components/temperature-chart";
-import { HistoryContainer } from "../../components/history-container";
 import { ToastContainer } from "../../components/toast-container";
+import { StatusIndicator } from "../../components/status-indicator";
 import { useTemperatureDetection } from "../../hooks/useTemperatureDetection";
 import { useToast } from "../../hooks/useToast";
+import { useTheme } from "../../hooks/useTheme";
 import styles from "./styles";
 
 interface Temperature {
@@ -23,6 +25,7 @@ interface Temperature {
 export function Home() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { toasts, removeToast } = useToast();
+  const theme = useTheme();
 
   const {
     data: allTemperatures,
@@ -52,8 +55,6 @@ export function Home() {
     refetchIntervalInBackground: true,
   });
 
-  useTemperatureDetection(currentTemp, allTemperatures);
-
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
@@ -76,21 +77,27 @@ export function Home() {
   const hasError = !!(errorAll || errorCurrent);
 
   return (
-    <View style={styles.wrapper}>
+    <View
+      style={[styles.wrapper, { backgroundColor: theme.colors.background }]}
+    >
       {isLoadingAll || isLoadingCurrent ? (
         <LoadingScreen />
       ) : (
         <ScrollView
-          style={styles.container}
+          style={[
+            styles.container,
+            { backgroundColor: theme.colors.background },
+          ]}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
               refreshing={isRefreshing}
               onRefresh={handleRefresh}
-              colors={["#667eea"]} // Android
-              tintColor="#667eea" // iOS
+              colors={[theme.colors.primary]} // Android
+              tintColor={theme.colors.primary} // iOS
               title="Atualizando temperaturas..."
-              titleColor="#667eea"
+              titleColor={theme.colors.primary}
+              progressBackgroundColor={theme.colors.surface}
             />
           }
         >
@@ -102,6 +109,10 @@ export function Home() {
             <CurrentTemperatureCard temperature={currentTemperature} />
           )}
 
+          {currentTemperature && (
+            <StatusIndicator temperature={currentTemperature.valor} />
+          )}
+
           <StatsContainer temperatures={dataToUse} />
 
           <TemperatureChart
@@ -110,7 +121,21 @@ export function Home() {
             hasError={!!errorAll}
           />
 
-          <HistoryContainer temperatures={dataToUse} avgTemp={avgTemp} />
+          {/* Informações Complementares */}
+          <View style={styles.infoSection}>
+
+            <View style={[styles.infoCard, { backgroundColor: theme.colors.surface, shadowColor: theme.colors.cardShadow }]}>
+              <View style={styles.infoRow}>
+                <Ionicons name="settings-outline" size={24} color={theme.colors.primary} />
+                <Text style={[styles.infoLabel, { color: theme.colors.text }]}>
+                  Faixa Ideal Programada
+                </Text>
+              </View>
+              <Text style={[styles.infoValue, { color: theme.colors.primary }]}>
+                35°C - 40°C
+              </Text>
+            </View>
+          </View>
         </ScrollView>
       )}
 

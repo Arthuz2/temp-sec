@@ -14,18 +14,27 @@ export default StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 5,
+  },
+  logoContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 16,
+  },
+  textContainer: {
+    alignItems: "flex-start",
   },
   title: {
-    fontSize: width * 0.07,
+    fontSize: width * 0.06,
     fontWeight: "bold",
-    color: "white",
-    textAlign: "center",
   },
   subtitle: {
-    fontSize: width * 0.04,
-    color: "rgba(255,255,255,0.8)",
-    textAlign: "center",
-    marginTop: 5,
+    fontSize: width * 0.035,
+    marginTop: 4,
+  },
+  content: {
+    paddingHorizontal: 10,
   },
 })
