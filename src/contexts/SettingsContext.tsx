@@ -58,7 +58,6 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     popup: true
   });
 
-  // Carregar configurações do AsyncStorage
   useEffect(() => {
     loadSettings();
   }, []);

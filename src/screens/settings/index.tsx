@@ -1,9 +1,12 @@
 
-import React, { useState } from 'react';
-import { View, Text, ScrollView, Switch, TouchableOpacity, Alert } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, ScrollView, Switch, TouchableOpacity, Alert, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { useSettings } from '../../contexts/SettingsContext';
+import { useQuery } from '@tanstack/react-query';
+import { getAllTemperature } from '../../api/getAllTemperature';
+import { exportToCSV, generatePDFReport } from '../../utils/exportData';
 import styles from './styles';
 
 export function Settings() {
@@ -19,10 +22,34 @@ export function Settings() {
     toggleDarkMode,
   } = useSettings();
 
-  const [minTemp, setMinTemp] = useState(temperatureLimits.min.toString());
-  const [maxTemp, setMaxTemp] = useState(temperatureLimits.max.toString());
-  const [idealMinTemp, setIdealMinTemp] = useState(temperatureLimits.ideal.min.toString());
-  const [idealMaxTemp, setIdealMaxTemp] = useState(temperatureLimits.ideal.max.toString());
+  // Funções de conversão
+  const celsiusToFahrenheit = (celsius: number) => (celsius * 9 / 5) + 32;
+  const fahrenheitToCelsius = (fahrenheit: number) => (fahrenheit - 32) * 5 / 9;
+
+  // Estados locais com conversão baseada na unidade
+  const getDisplayTemp = (temp: number) =>
+    temperatureUnit === '°F' ? celsiusToFahrenheit(temp) : temp;
+
+  const [minTemp, setMinTemp] = useState(getDisplayTemp(temperatureLimits.min).toFixed(1));
+  const [maxTemp, setMaxTemp] = useState(getDisplayTemp(temperatureLimits.max).toFixed(1));
+  const [idealMinTemp, setIdealMinTemp] = useState(getDisplayTemp(temperatureLimits.ideal.min).toFixed(1));
+  const [idealMaxTemp, setIdealMaxTemp] = useState(getDisplayTemp(temperatureLimits.ideal.max).toFixed(1));
+  const [isEditing, setIsEditing] = useState(false);
+
+  // Query para obter dados para exportação
+  const { data: allTemperatures } = useQuery({
+    queryKey: ['allTemperatures'],
+    queryFn: getAllTemperature,
+    enabled: false, // Só carrega quando necessário
+  });
+
+  // Atualizar valores quando a unidade mudar
+  useEffect(() => {
+    setMinTemp(getDisplayTemp(temperatureLimits.min).toFixed(1));
+    setMaxTemp(getDisplayTemp(temperatureLimits.max).toFixed(1));
+    setIdealMinTemp(getDisplayTemp(temperatureLimits.ideal.min).toFixed(1));
+    setIdealMaxTemp(getDisplayTemp(temperatureLimits.ideal.max).toFixed(1));
+  }, [temperatureUnit, temperatureLimits]);
 
   const intervalOptions = [
     { label: '10 segundos', value: 10000 },
@@ -54,15 +81,20 @@ export function Settings() {
   };
 
   const saveLimits = () => {
+    // Converter valores para Celsius se estiver em Fahrenheit
+    const convertToStorage = (temp: number) =>
+      temperatureUnit === '°F' ? fahrenheitToCelsius(temp) : temp;
+
     const newLimits = {
-      min: parseFloat(minTemp) || 15,
-      max: parseFloat(maxTemp) || 45,
+      min: convertToStorage(parseFloat(minTemp) || (temperatureUnit === '°F' ? 59 : 15)),
+      max: convertToStorage(parseFloat(maxTemp) || (temperatureUnit === '°F' ? 113 : 45)),
       ideal: {
-        min: parseFloat(idealMinTemp) || 35,
-        max: parseFloat(idealMaxTemp) || 40
+        min: convertToStorage(parseFloat(idealMinTemp) || (temperatureUnit === '°F' ? 95 : 35)),
+        max: convertToStorage(parseFloat(idealMaxTemp) || (temperatureUnit === '°F' ? 104 : 40))
       }
     };
 
+    // Validação usando valores convertidos
     if (newLimits.min >= newLimits.max) {
       Alert.alert('Erro', 'A temperatura mínima deve ser menor que a máxima');
       return;
@@ -74,7 +106,36 @@ export function Settings() {
     }
 
     updateTemperatureLimits(newLimits);
+    setIsEditing(false);
     Alert.alert('Sucesso', 'Configurações salvas com sucesso!');
+  };
+
+  const handleExportCSV = async () => {
+    if (!allTemperatures || allTemperatures.length === 0) {
+      Alert.alert('Aviso', 'Não há dados para exportar');
+      return;
+    }
+
+    const result = await exportToCSV(allTemperatures, []);
+    if (result.success) {
+      Alert.alert('Sucesso', `Dados exportados como ${result.fileName}`);
+    } else {
+      Alert.alert('Erro', `Falha ao exportar: ${result.error}`);
+    }
+  };
+
+  const handleGenerateReport = async () => {
+    if (!allTemperatures || allTemperatures.length === 0) {
+      Alert.alert('Aviso', 'Não há dados para gerar relatório');
+      return;
+    }
+
+    const result = await generatePDFReport(allTemperatures, []);
+    if (result.success) {
+      Alert.alert('Sucesso', `Relatório gerado como ${result.fileName}`);
+    } else {
+      Alert.alert('Erro', `Falha ao gerar relatório: ${result.error}`);
+    }
   };
 
   return (
@@ -95,7 +156,7 @@ export function Settings() {
 
           <TouchableOpacity
             style={styles.settingItem}
-            onPress={() => {/* TODO: Implementar exportação CSV */ }}
+            onPress={handleExportCSV}
           >
             <View style={styles.settingInfo}>
               <Ionicons name="document-text" size={20} color={theme.colors.text} />
@@ -113,7 +174,7 @@ export function Settings() {
 
           <TouchableOpacity
             style={styles.settingItem}
-            onPress={() => {/* TODO: Implementar relatório PDF */ }}
+            onPress={handleGenerateReport}
           >
             <View style={styles.settingInfo}>
               <Ionicons name="document" size={20} color={theme.colors.text} />
@@ -208,25 +269,59 @@ export function Settings() {
           </Text>
 
           <View style={styles.inputGroup}>
-            <Text style={[styles.inputLabel, { color: theme.colors.text }]}>
-              Faixa Operacional
-            </Text>
+            <View style={styles.inputHeader}>
+              <Text style={[styles.inputLabel, { color: theme.colors.text }]}>
+                Faixa Operacional
+              </Text>
+              <TouchableOpacity
+                onPress={() => setIsEditing(!isEditing)}
+                style={styles.editButton}
+              >
+                <Ionicons
+                  name={isEditing ? "checkmark" : "pencil"}
+                  size={16}
+                  color={theme.colors.primary}
+                />
+              </TouchableOpacity>
+            </View>
             <View style={styles.inputRow}>
               <View style={[styles.inputContainer, { borderColor: theme.colors.border }]}>
                 <Text style={[styles.inputPrefix, { color: theme.colors.textSecondary }]}>
                   Min:
                 </Text>
-                <Text style={[styles.inputValue, { color: theme.colors.text }]}>
-                  {temperatureLimits.min}°C
-                </Text>
+                {isEditing ? (
+                  <TextInput
+                    style={[styles.inputField, { color: theme.colors.text }]}
+                    value={minTemp}
+                    onChangeText={setMinTemp}
+                    keyboardType="numeric"
+                    placeholder={temperatureUnit === '°F' ? "59" : "15"}
+                    placeholderTextColor={theme.colors.textSecondary}
+                  />
+                ) : (
+                  <Text style={[styles.inputValue, { color: theme.colors.text }]}>
+                    {getDisplayTemp(temperatureLimits.min).toFixed(1)}{temperatureUnit}
+                  </Text>
+                )}
               </View>
               <View style={[styles.inputContainer, { borderColor: theme.colors.border }]}>
                 <Text style={[styles.inputPrefix, { color: theme.colors.textSecondary }]}>
                   Max:
                 </Text>
-                <Text style={[styles.inputValue, { color: theme.colors.text }]}>
-                  {temperatureLimits.max}°C
-                </Text>
+                {isEditing ? (
+                  <TextInput
+                    style={[styles.inputField, { color: theme.colors.text }]}
+                    value={maxTemp}
+                    onChangeText={setMaxTemp}
+                    keyboardType="numeric"
+                    placeholder={temperatureUnit === '°F' ? "113" : "45"}
+                    placeholderTextColor={theme.colors.textSecondary}
+                  />
+                ) : (
+                  <Text style={[styles.inputValue, { color: theme.colors.text }]}>
+                    {getDisplayTemp(temperatureLimits.max).toFixed(1)}{temperatureUnit}
+                  </Text>
+                )}
               </View>
             </View>
           </View>
@@ -240,20 +335,54 @@ export function Settings() {
                 <Text style={[styles.inputPrefix, { color: theme.colors.textSecondary }]}>
                   Min:
                 </Text>
-                <Text style={[styles.inputValue, { color: theme.colors.text }]}>
-                  {temperatureLimits.ideal.min}°C
-                </Text>
+                {isEditing ? (
+                  <TextInput
+                    style={[styles.inputField, { color: theme.colors.text }]}
+                    value={idealMinTemp}
+                    onChangeText={setIdealMinTemp}
+                    keyboardType="numeric"
+                    placeholder={temperatureUnit === '°F' ? "95" : "35"}
+                    placeholderTextColor={theme.colors.textSecondary}
+                  />
+                ) : (
+                  <Text style={[styles.inputValue, { color: theme.colors.text }]}>
+                    {getDisplayTemp(temperatureLimits.ideal.min).toFixed(1)}{temperatureUnit}
+                  </Text>
+                )}
               </View>
               <View style={[styles.inputContainer, { borderColor: theme.colors.border }]}>
                 <Text style={[styles.inputPrefix, { color: theme.colors.textSecondary }]}>
                   Max:
                 </Text>
-                <Text style={[styles.inputValue, { color: theme.colors.text }]}>
-                  {temperatureLimits.ideal.max}°C
-                </Text>
+                {isEditing ? (
+                  <TextInput
+                    style={[styles.inputField, { color: theme.colors.text }]}
+                    value={idealMaxTemp}
+                    onChangeText={setIdealMaxTemp}
+                    keyboardType="numeric"
+                    placeholder={temperatureUnit === '°F' ? "104" : "40"}
+                    placeholderTextColor={theme.colors.textSecondary}
+                  />
+                ) : (
+                  <Text style={[styles.inputValue, { color: theme.colors.text }]}>
+                    {getDisplayTemp(temperatureLimits.ideal.max).toFixed(1)}{temperatureUnit}
+                  </Text>
+                )}
               </View>
             </View>
           </View>
+
+          {isEditing && (
+            <TouchableOpacity
+              style={[styles.saveButton, { backgroundColor: theme.colors.primary }]}
+              onPress={saveLimits}
+            >
+              <Ionicons name="save" size={20} color="white" />
+              <Text style={styles.saveButtonText}>
+                Salvar Configurações
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Seção Sobre */}

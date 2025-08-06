@@ -3,6 +3,7 @@ import React, { createContext, useContext, useEffect, useState, ReactNode } from
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as TaskManager from 'expo-task-manager';
 import * as BackgroundFetch from 'expo-background-fetch';
+import * as Notifications from 'expo-notifications';
 import { useNotifications } from '../hooks/useNotifications';
 import { getLastTemperature } from '../api/getLastTemperature';
 
@@ -110,14 +111,28 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
       const currentTempTime = new Date(currentTemp.data).getTime();
       const lastNotifiedTime = lastNotifiedTemp ? new Date(lastNotifiedTemp.data).getTime() : 0;
 
-      // Adicionar debounce de 5 segundos para evitar notificações duplicadas
+      // Adicionar debounce de 10 segundos para evitar notificações duplicadas
       const timeDifference = currentTempTime - lastNotifiedTime;
 
-      if (timeDifference > 5000) { // 5 segundos de diferença mínima
-        await sendLocalNotification(currentTemp);
+      if (timeDifference > 10000) { // 10 segundos de diferença mínima
+        // Verificar configurações de notificação
+        const notificationSettings = await AsyncStorage.getItem('@settings:notificationSettings');
+        const settings = notificationSettings ? JSON.parse(notificationSettings) : {
+          sound: true,
+          vibration: true,
+          popup: true
+        };
+
+        // Apenas enviar notificação se pop-up estiver habilitado
+        if (settings.popup) {
+          await sendLocalNotification(currentTemp);
+          console.log('Nova notificação enviada:', currentTemp.valor + '°C');
+        } else {
+          console.log('Notificação desabilitada nas configurações');
+        }
+
         setLastNotifiedTemp(currentTemp);
         await AsyncStorage.setItem(LAST_NOTIFIED_TEMP_KEY, JSON.stringify(currentTemp));
-        console.log('Nova notificação enviada:', currentTemp.valor + '°C');
       } else {
         console.log('Notificação ignorada (muito recente):', timeDifference + 'ms');
       }

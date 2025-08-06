@@ -1,9 +1,10 @@
-
 import { useEffect, useRef } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { getLastTemperature } from '../api/getLastTemperature';
+import { getAllTemperature } from '../api/getAllTemperature';
 import { useNotificationContext } from '../contexts/NotificationContext';
+import { useSettings } from '../contexts/SettingsContext';
 
 interface Temperature {
   data: string;
@@ -12,6 +13,7 @@ interface Temperature {
 
 export function useTemperatureMonitor() {
   const { checkForNewTemperature, registerBackgroundTask, isBackgroundTaskRegistered } = useNotificationContext();
+  const { readingInterval } = useSettings();
   const appState = useRef(AppState.currentState);
   const lastNotificationTime = useRef<string | null>(null);
 
@@ -19,8 +21,16 @@ export function useTemperatureMonitor() {
   const { data: currentTemp, refetch } = useQuery<Temperature>({
     queryKey: ['temperatureMonitor'],
     queryFn: getLastTemperature,
-    refetchInterval: 30000, // 30 segundos
+    refetchInterval: readingInterval, // 30 segundos
     refetchIntervalInBackground: true,
+    enabled: true,
+  });
+
+  // Query para obter histórico completo
+  const { data: allTemperatures, refetch: refetchAllTemperatures } = useQuery<Temperature[]>({
+    queryKey: ['allTemperatures'],
+    queryFn: getAllTemperature,
+    refetchInterval: readingInterval * 2, // 1 minuto
     enabled: true,
   });
 
@@ -55,8 +65,14 @@ export function useTemperatureMonitor() {
     appState.current = nextAppState;
   };
 
+  const refetchAll = () => {
+    refetch();
+    refetchAllTemperatures();
+  };
+
   return {
     currentTemp,
-    refetch,
+    allTemperatures,
+    refetch: refetchAll,
   };
 }

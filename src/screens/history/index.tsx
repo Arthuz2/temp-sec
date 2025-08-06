@@ -7,6 +7,7 @@ import { ptBR } from 'date-fns/locale';
 import { useQuery } from '@tanstack/react-query';
 import { getAllTemperature } from '../../api/getAllTemperature';
 import { useTheme } from '../../hooks/useTheme';
+import { useSettings } from '../../contexts/SettingsContext';
 import { LoadingScreen } from '../../components/loading-screen';
 import styles from './styles';
 
@@ -91,6 +92,7 @@ const generateSessionsFromData = (temperatures: any[]) => {
 
 export function History() {
   const theme = useTheme();
+  const { temperatureUnit } = useSettings();
 
   const { data: temperatureData, isLoading } = useQuery({
     queryKey: ['allTemperatures'],
@@ -99,6 +101,10 @@ export function History() {
   });
 
   const sessions = temperatureData ? generateSessionsFromData(temperatureData) : [];
+
+  const convertTemperature = (temp: number) => {
+    return temperatureUnit === '°F' ? (temp * 9 / 5) + 32 : temp;
+  };
 
   if (isLoading) {
     return <LoadingScreen />;
@@ -153,19 +159,19 @@ export function History() {
         <View style={styles.statItem}>
           <Ionicons name="thermometer" size={16} color={theme.colors.primary} />
           <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Média</Text>
-          <Text style={[styles.statValue, { color: theme.colors.text }]}>{item.avgTemperature.toFixed(1)}°C</Text>
+          <Text style={[styles.statValue, { color: theme.colors.text }]}>{convertTemperature(item.avgTemperature).toFixed(1)}{temperatureUnit}</Text>
         </View>
 
         <View style={styles.statItem}>
           <Ionicons name="arrow-up" size={16} color="#FF6B6B" />
           <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Máx</Text>
-          <Text style={[styles.statValue, { color: theme.colors.text }]}>{item.maxTemperature.toFixed(1)}°C</Text>
+          <Text style={[styles.statValue, { color: theme.colors.text }]}>{convertTemperature(item.maxTemperature).toFixed(1)}{temperatureUnit}</Text>
         </View>
 
         <View style={styles.statItem}>
           <Ionicons name="arrow-down" size={16} color="#4ECDC4" />
           <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Mín</Text>
-          <Text style={[styles.statValue, { color: theme.colors.text }]}>{item.minTemperature.toFixed(1)}°C</Text>
+          <Text style={[styles.statValue, { color: theme.colors.text }]}>{convertTemperature(item.minTemperature).toFixed(1)}{temperatureUnit}</Text>
         </View>
 
         <View style={styles.statItem}>
@@ -206,7 +212,7 @@ export function History() {
         <View style={[styles.summaryItem, { backgroundColor: theme.colors.surface }]}>
           <Ionicons name="thermometer" size={24} color={theme.colors.primary} />
           <Text style={[styles.summaryValue, { color: theme.colors.text }]}>
-            {sessions.length > 0 ? (sessions.reduce((acc, s) => acc + s.avgTemperature, 0) / sessions.length).toFixed(1) : '0.0'}°C
+            {sessions.length > 0 ? convertTemperature(sessions.reduce((acc, s) => acc + s.avgTemperature, 0) / sessions.length).toFixed(1) : '0.0'}{temperatureUnit}
           </Text>
           <Text style={[styles.summaryLabel, { color: theme.colors.textSecondary }]}>Temp. Média</Text>
         </View>

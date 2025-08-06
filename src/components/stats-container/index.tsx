@@ -1,27 +1,61 @@
-import { View } from "react-native"
-import { StatCard } from "../stat-card"
-import styles from "./styles"
+import React from 'react';
+import { View } from 'react-native';
+import { StatCard } from '../stat-card';
+import { useSettings } from '../../contexts/SettingsContext';
+import styles from './styles';
+
 
 interface Temperature {
   data: string
   valor: number
 }
-
 interface StatsContainerProps {
   temperatures: Temperature[]
 }
 
 export function StatsContainer({ temperatures }: StatsContainerProps) {
-  const maxTemp = temperatures.length > 0 ? Math.max(...temperatures.map((t) => t.valor)) : 0
-  const minTemp = temperatures.length > 0 ? Math.min(...temperatures.map((t) => t.valor)) : 0
-  const avgTemp =
-    temperatures.length > 0 ? Math.round(temperatures.reduce((acc, t) => acc + t.valor, 0) / temperatures.length) : 0
+  const { temperatureUnit } = useSettings();
+
+  if (!temperatures || temperatures.length === 0) {
+    return null;
+  }
+
+  const values = temperatures.map(t => t.valor);
+  const maxTemp = Math.max(...values);
+  const minTemp = Math.min(...values);
+  const avgTemp = values.reduce((sum, temp) => sum + temp, 0) / values.length;
+
+  // Converter temperaturas baseado na unidade
+  const convertTemp = (temp: number) =>
+    temperatureUnit === '°F' ? (temp * 9 / 5) + 32 : temp;
+
+  const displayMaxTemp = convertTemp(maxTemp);
+  const displayMinTemp = convertTemp(minTemp);
+  const displayAvgTemp = convertTemp(avgTemp);
 
   return (
     <View style={styles.container}>
-      <StatCard value={maxTemp} label="Máxima" icon="thermometer" colors={["#FF6B6B", "#FF8E53"]} />
-      <StatCard value={minTemp} label="Mínima" icon="snow" colors={["#4ECDC4", "#44A08D"]} />
-      <StatCard value={avgTemp} label="Média" icon="analytics" colors={["#A8EDEA", "#FED6E3"]} />
+      <StatCard
+        label="Máxima"
+        value={parseFloat(displayMaxTemp.toFixed(1))}
+        unit={temperatureUnit}
+        icon="arrow-up"
+        colors={["#ff4757", "#ff6b81"]}
+      />
+      <StatCard
+        label="Mínima"
+        value={parseFloat(displayMinTemp.toFixed(1))}
+        unit={temperatureUnit}
+        icon="arrow-down"
+        colors={["#3742fa", "#5352ed"]}
+      />
+      <StatCard
+        label="Média"
+        value={parseFloat(displayAvgTemp.toFixed(1))}
+        unit={temperatureUnit}
+        icon="trending-up"
+        colors={["#2ed573", "#70a1ff"]}
+      />
     </View>
-  )
+  );
 }

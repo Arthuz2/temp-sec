@@ -9,179 +9,128 @@ export default StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: width * 0.05,
-    paddingVertical: 20,
+    padding: 20,
     borderBottomWidth: 1,
   },
   title: {
-    fontSize: width * 0.06,
+    fontSize: width * 0.055,
     fontWeight: 'bold',
+    marginLeft: 12,
   },
-  badge: {
-    backgroundColor: '#FF6B6B',
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    minWidth: 24,
+  content: {
+    flex: 1,
+    padding: width * 0.04,
+  },
+  section: {
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
-  },
-  badgeText: {
-    color: 'white',
-    fontSize: width * 0.03,
-    fontWeight: 'bold',
-  },
-  settingsSection: {
-    paddingHorizontal: width * 0.05,
-    paddingVertical: 20,
-    borderBottomWidth: 1,
+    marginBottom: 16,
   },
   sectionTitle: {
     fontSize: width * 0.045,
     fontWeight: '600',
-    marginBottom: 15,
-  },
-  subsectionTitle: {
-    fontSize: width * 0.04,
-    fontWeight: '600',
-    marginBottom: 12,
-    marginTop: 8,
+    marginLeft: 8,
+    flex: 1,
   },
   settingItem: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.05)',
   },
   settingInfo: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
   },
+  settingText: {
+    marginLeft: 12,
+    flex: 1,
+  },
   settingLabel: {
     fontSize: width * 0.04,
-    marginLeft: 12,
-  },
-  divider: {
-    height: 1,
-    marginVertical: 16,
-  },
-  historySection: {
-    flex: 1,
-    paddingHorizontal: width * 0.05,
-    paddingTop: 20,
-  },
-  historySectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  clearButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255, 107, 107, 0.1)',
-  },
-  clearButtonText: {
-    fontSize: width * 0.035,
-    marginLeft: 4,
     fontWeight: '500',
   },
-  historyList: {
-    paddingBottom: 20,
+  settingDescription: {
+    fontSize: width * 0.035,
+    marginTop: 2,
   },
   emptyState: {
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 40,
-    borderRadius: 12,
-    marginVertical: 10,
+    padding: 40,
   },
   emptyStateText: {
     fontSize: width * 0.04,
-    marginTop: 12,
+    fontWeight: '500',
+    marginTop: 16,
+  },
+  emptyStateSubtext: {
+    fontSize: width * 0.035,
+    marginTop: 4,
     textAlign: 'center',
   },
-  notificationItem: {
-    borderRadius: 12,
-    marginVertical: 5,
+  alertItem: {
     borderLeftWidth: 4,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    paddingLeft: 16,
+    paddingVertical: 12,
+    marginBottom: 12,
+    backgroundColor: 'rgba(0,0,0,0.02)',
+    borderRadius: 8,
   },
-  notificationHeader: {
+  alertHeader: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    padding: 16,
+    alignItems: 'center',
+    marginBottom: 8,
   },
-  notificationIconContainer: {
-    position: 'relative',
+  alertIcon: {
     marginRight: 12,
-    marginTop: 2,
   },
-  unreadDot: {
-    position: 'absolute',
-    top: -2,
-    right: -2,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#FF6B6B',
-  },
-  notificationContent: {
+  alertInfo: {
     flex: 1,
   },
-  notificationMeta: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  notificationType: {
-    fontSize: width * 0.035,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-  },
-  notificationTime: {
-    fontSize: width * 0.032,
-  },
-  notificationTitle: {
+  alertType: {
     fontSize: width * 0.04,
     fontWeight: '600',
-    marginBottom: 4,
   },
-  notificationMessage: {
+  alertTemperature: {
+    fontSize: width * 0.045,
+    fontWeight: 'bold',
+    marginTop: 2,
+  },
+  alertTime: {
+    fontSize: width * 0.032,
+  },
+  alertMessage: {
     fontSize: width * 0.035,
-    lineHeight: width * 0.05,
+    lineHeight: 18,
   },
-  temperatureBadge: {
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    alignSelf: 'flex-start',
-    marginLeft: 8,
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
   },
-  temperatureValue: {
-    fontSize: width * 0.035,
+  statItem: {
+    alignItems: 'center',
+  },
+  statNumber: {
+    fontSize: width * 0.08,
     fontWeight: 'bold',
   },
-  backgroundInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 10,
-    padding: 8,
-    borderRadius: 6,
-  },
-  backgroundInfoText: {
-    fontSize: width * 0.035,
-    marginLeft: 6,
+  statLabel: {
+    fontSize: width * 0.032,
+    marginTop: 4,
+    textAlign: 'center',
   },
 });

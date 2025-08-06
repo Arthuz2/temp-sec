@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons"
 import { formatDistanceToNow } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import styles, { iconSize } from "./styles"
+import { useSettings } from '../../contexts/SettingsContext';
 
 interface Temperature {
   data: string
@@ -29,12 +30,19 @@ export function CurrentTemperatureCard({ temperature }: CurrentTemperatureCardPr
     return ["#667eea", "#764ba2"]
   }
 
+  const { temperatureUnit } = useSettings();
+
+  // Converter temperatura baseado na unidade
+  const displayTemp = temperatureUnit === '°F'
+    ? (temperature.valor * 9 / 5) + 32
+    : temperature.valor;
+
   return (
     <LinearGradient colors={getWeatherColor(temperature.valor)} style={styles.container}>
       <View style={styles.content}>
         <View style={styles.upSection}>
           <Ionicons name={getWeatherIcon(temperature.valor)} size={iconSize} color="white" />
-          <Text style={styles.temperatureValue}>{temperature.valor}°C</Text>
+          <Text style={styles.temperatureValue}>{displayTemp.toFixed(1)}{temperatureUnit}</Text>
         </View>
         <View style={styles.bottomSection}>
           <Text style={styles.label}>Temperatura Atual</Text>

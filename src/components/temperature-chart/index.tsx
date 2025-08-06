@@ -1,9 +1,9 @@
-
 import { View, Text, ScrollView } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import Svg, { Path, Circle } from 'react-native-svg'
 import { useTheme } from "../../hooks/useTheme"
 import styles, { maxBarHeight } from "./styles"
+import { useSettings } from "../../contexts/SettingsContext"
 
 interface Temperature {
   data: string
@@ -18,30 +18,40 @@ interface TemperatureChartProps {
 
 export function TemperatureChart({ temperatures, avgTemp, hasError = false }: TemperatureChartProps) {
   const theme = useTheme();
-
-  if (!temperatures || temperatures.length === 0) {
-    return (
-      <View style={[styles.container, { backgroundColor: theme.colors.surface, shadowColor: theme.colors.cardShadow }]}>
-        <Text style={[styles.title, { color: theme.colors.text }]}>Gráfico de Temperaturas</Text>
-        <View style={styles.noDataContainer}>
-          <Ionicons name="bar-chart" size={40} color="#ccc" />
-          <Text style={[styles.noDataText, { color: theme.colors.textSecondary }]}>Nenhum dado disponível</Text>
-        </View>
-      </View>
-    )
-  }
+  const { temperatureUnit } = useSettings();
 
   const recentTemps = temperatures.slice(-12); // Últimas 12 medições
-  const maxValue = Math.max(...recentTemps.map((t) => t.valor))
-  const minValue = Math.min(...recentTemps.map((t) => t.valor))
-  const range = maxValue - minValue || 1
+  let maxValue = Math.max(...recentTemps.map((t) => t.valor))
+  let minValue = Math.min(...recentTemps.map((t) => t.valor))
+  if (maxValue === -Infinity || minValue === Infinity) {
+    minValue = 0;
+    maxValue = 0;
+  }
+  const range = maxValue - minValue || 1;
+
+  const convertTemperature = (temp: number) => {
+    return temperatureUnit === '°F' ? (temp * 9 / 5) + 32 : temp;
+  }
 
   const getBarColor = (temp: number) => {
-    if (temp >= 40) return "#FF4444" // Vermelho - muito alto
-    if (temp >= 35) return "#FF8C00" // Laranja - alto
-    if (temp >= 30) return "#4ECDC4" // Verde claro - ideal
-    if (temp >= 25) return "#32CD32" // Verde - bom
-    return "#87CEEB" // Azul claro - baixo
+    const convertedTemp = convertTemperature(temp);
+    const { temperatureLimits } = useSettings();
+
+    // Converter limites para a unidade atual
+    const convertedLimits = {
+      min: convertTemperature(temperatureLimits.min),
+      max: convertTemperature(temperatureLimits.max),
+      ideal: {
+        min: convertTemperature(temperatureLimits.ideal.min),
+        max: convertTemperature(temperatureLimits.ideal.max)
+      }
+    };
+
+    if (convertedTemp <= convertedLimits.min) return "#3742fa" // Azul - muito baixo
+    if (convertedTemp >= convertedLimits.max) return "#ff4757" // Vermelho - muito alto
+    if (convertedTemp >= convertedLimits.ideal.min && convertedTemp <= convertedLimits.ideal.max) return "#2ed573" // Verde - ideal
+    if (convertedTemp < convertedLimits.ideal.min) return "#70a1ff" // Azul claro - baixo
+    return "#ffa502" // Laranja - altoaixo
   }
 
   return (
@@ -63,24 +73,24 @@ export function TemperatureChart({ temperatures, avgTemp, hasError = false }: Te
       <View style={styles.statsRow}>
         <View style={styles.statItem}>
           <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Máx</Text>
-          <Text style={[styles.statValue, { color: theme.colors.text }]}>{maxValue.toFixed(1)}°</Text>
+          <Text style={[styles.statValue, { color: theme.colors.text }]}>{convertTemperature(maxValue).toFixed(1)}{temperatureUnit}</Text>
         </View>
         <View style={styles.statItem}>
           <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Mín</Text>
-          <Text style={[styles.statValue, { color: theme.colors.text }]}>{minValue.toFixed(1)}°</Text>
+          <Text style={[styles.statValue, { color: theme.colors.text }]}>{convertTemperature(minValue).toFixed(1)}{temperatureUnit}</Text>
         </View>
         <View style={styles.statItem}>
           <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Média</Text>
-          <Text style={[styles.statValue, { color: theme.colors.text }]}>{avgTemp}°</Text>
+          <Text style={[styles.statValue, { color: theme.colors.text }]}>{convertTemperature(avgTemp).toFixed(1)}{temperatureUnit}</Text>
         </View>
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <View style={styles.chartContent}>
           <View style={styles.yAxisLabels}>
-            <Text style={[styles.yAxisLabel, { color: theme.colors.textSecondary }]}>{maxValue.toFixed(0)}°</Text>
-            <Text style={[styles.yAxisLabel, { color: theme.colors.textSecondary }]}>{((maxValue + minValue) / 2).toFixed(0)}°</Text>
-            <Text style={[styles.yAxisLabel, { color: theme.colors.textSecondary }]}>{minValue.toFixed(0)}°</Text>
+            <Text style={[styles.yAxisLabel, { color: theme.colors.textSecondary }]}>{convertTemperature(maxValue).toFixed(0)}{temperatureUnit}</Text>
+            <Text style={[styles.yAxisLabel, { color: theme.colors.textSecondary }]}>{convertTemperature((maxValue + minValue) / 2).toFixed(0)}{temperatureUnit}</Text>
+            <Text style={[styles.yAxisLabel, { color: theme.colors.textSecondary }]}>{convertTemperature(minValue).toFixed(0)}{temperatureUnit}</Text>
           </View>
 
           <View style={styles.chartContainer}>
@@ -88,8 +98,9 @@ export function TemperatureChart({ temperatures, avgTemp, hasError = false }: Te
               {/* Linha do gráfico */}
               <Path
                 d={recentTemps.map((temp, index) => {
+                  const convertedTemp = convertTemperature(temp.valor);
                   const x = index * 60 + 30
-                  const y = maxBarHeight + 20 - (((temp.valor - minValue) / range) * maxBarHeight)
+                  const y = maxBarHeight + 20 - (((convertedTemp - convertTemperature(minValue)) / range) * maxBarHeight)
                   return `${index === 0 ? 'M' : 'L'} ${x} ${y}`
                 }).join(' ')}
                 stroke={theme.colors.primary || "#4ECDC4"}
@@ -101,8 +112,9 @@ export function TemperatureChart({ temperatures, avgTemp, hasError = false }: Te
 
               {/* Pontos do gráfico */}
               {recentTemps.map((temp, index) => {
+                const convertedTemp = convertTemperature(temp.valor);
                 const x = index * 60 + 30
-                const y = maxBarHeight + 20 - (((temp.valor - minValue) / range) * maxBarHeight)
+                const y = maxBarHeight + 20 - (((convertedTemp - convertTemperature(minValue)) / range) * maxBarHeight)
 
                 return (
                   <Circle
@@ -123,7 +135,7 @@ export function TemperatureChart({ temperatures, avgTemp, hasError = false }: Te
               {recentTemps.map((temp, index) => (
                 <View key={`${temp.data}-${index}`} style={[styles.chartPoint, { left: index * 60 + 10 }]}>
                   <Text style={[styles.chartValue, { color: theme.colors.text }]}>
-                    {temp.valor.toFixed(1)}°
+                    {convertTemperature(temp.valor).toFixed(1)}{temperatureUnit}
                   </Text>
                   <Text style={[styles.chartDate, { color: theme.colors.textSecondary }]}>
                     {new Date(temp.data).toLocaleDateString('pt-BR', {

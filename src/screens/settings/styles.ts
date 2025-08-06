@@ -105,4 +105,34 @@ export default StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
   },
+  inputHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  editButton: {
+    padding: 8,
+  },
+  inputField: {
+    fontSize: width * 0.04,
+    fontWeight: '500',
+    flex: 1,
+    textAlign: 'right',
+  },
+  saveButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    marginTop: 20,
+  },
+  saveButtonText: {
+    color: 'white',
+    fontSize: width * 0.04,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
 });

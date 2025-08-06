@@ -1,13 +1,20 @@
 import { useEffect, useRef } from "react";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
-import Constants from "expo-constants";
-
-// (Removed duplicate implementation of useNotifications and registerForPushNotificationsAsync)
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useSettings } from "../contexts/SettingsContext";
 
 interface Temperature {
   data: string;
   valor: number;
+}
+
+interface NotificationAlert {
+  id: string;
+  timestamp: string;
+  temperature: number;
+  type: 'high' | 'low' | 'normal';
+  message: string;
 }
 
 // Configurar o comportamento das notificações
@@ -21,8 +28,30 @@ Notifications.setNotificationHandler({
 });
 
 export function useNotifications() {
+  const { notificationSettings, temperatureLimits } = useSettings();
   const notificationListener = useRef<Notifications.Subscription | null>(null);
   const responseListener = useRef<Notifications.Subscription | null>(null);
+
+  const saveAlertToHistory = async (temperature: Temperature, type: 'high' | 'low' | 'normal', message: string) => {
+    try {
+      const existingHistory = await AsyncStorage.getItem('alertHistory');
+      const history: NotificationAlert[] = existingHistory ? JSON.parse(existingHistory) : [];
+
+      const newAlert: NotificationAlert = {
+        id: `${Date.now()}_${Math.random()}`,
+        timestamp: temperature.data,
+        temperature: temperature.valor,
+        type,
+        message
+      };
+
+      // Adicionar no início da lista e manter apenas os últimos 100
+      const updatedHistory = [newAlert, ...history].slice(0, 100);
+      await AsyncStorage.setItem('alertHistory', JSON.stringify(updatedHistory));
+    } catch (error) {
+      console.error('Erro ao salvar alerta no histórico:', error);
+    }
+  };
 
   useEffect(() => {
     registerForPushNotificationsAsync();
@@ -48,14 +77,21 @@ export function useNotifications() {
 
     let icon = "🌡️";
     let priority = Notifications.AndroidNotificationPriority.DEFAULT;
+    let type: 'high' | 'low' | 'normal' = 'normal';
+    let message = `Temperatura registrada: ${temperatureValue}°C às ${timeAgo}`;
+    console.log('Enviando notificação local:', message);
 
-    if (temperatureValue >= 35) {
+    if (temperatureValue >= temperatureLimits.max) {
       icon = "🔥";
       priority = Notifications.AndroidNotificationPriority.HIGH;
-    } else if (temperatureValue <= 10) {
+      type = 'high';
+      message = `ALERTA: Temperatura muito alta! ${temperatureValue}°C registrados às ${timeAgo}`;
+    } else if (temperatureValue <= temperatureLimits.min) {
       icon = "❄️";
       priority = Notifications.AndroidNotificationPriority.HIGH;
-    } else if (temperatureValue >= 25) {
+      type = 'low';
+      message = `ALERTA: Temperatura muito baixa! ${temperatureValue}°C registrados às ${timeAgo}`;
+    } else if (temperatureValue >= temperatureLimits.ideal.min && temperatureValue <= temperatureLimits.ideal.max) {
       icon = "☀️";
     } else {
       icon = "🌤️";
@@ -64,18 +100,19 @@ export function useNotifications() {
     await Notifications.scheduleNotificationAsync({
       content: {
         title: `${icon} Nova Temperatura Registrada`,
-        body: `${temperatureValue}°C registrados às ${timeAgo}`,
+        body: message,
         data: {
           temperature: temperatureValue,
           timestamp: temperature.data,
           type: "new_temperature",
         },
-        sound:
-          temperatureValue >= 35 || temperatureValue <= 10 ? "default" : false,
+        sound: notificationSettings.sound ? "default" : false,
       },
       trigger: null, // Enviar imediatamente
       identifier: `temp_${Date.now()}`,
     });
+
+    await saveAlertToHistory(temperature, type, message);
   };
 
   return { sendLocalNotification };

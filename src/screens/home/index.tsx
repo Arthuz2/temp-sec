@@ -15,6 +15,7 @@ import { StatusIndicator } from "../../components/status-indicator";
 import { useTemperatureDetection } from "../../hooks/useTemperatureDetection";
 import { useToast } from "../../hooks/useToast";
 import { useTheme } from "../../hooks/useTheme";
+import { useSettings } from "../../contexts/SettingsContext";
 import styles from "./styles";
 
 interface Temperature {
@@ -132,7 +133,14 @@ export function Home() {
                 </Text>
               </View>
               <Text style={[styles.infoValue, { color: theme.colors.primary }]}>
-                35°C - 40°C
+                {/* Usar limites dinâmicos do settings */}
+                {(() => {
+                  const { temperatureLimits, temperatureUnit } = useSettings();
+                  const convertTemp = (temp: number) => temperatureUnit === '°F' ? (temp * 9 / 5) + 32 : temp;
+                  const minIdeal = convertTemp(temperatureLimits.ideal.min).toFixed(1);
+                  const maxIdeal = convertTemp(temperatureLimits.ideal.max).toFixed(1);
+                  return `${minIdeal}${temperatureUnit} - ${maxIdeal}${temperatureUnit}`;
+                })()}
               </Text>
             </View>
           </View>
