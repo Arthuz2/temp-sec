@@ -16,18 +16,28 @@ interface CurrentTemperatureCardProps {
 }
 
 export function CurrentTemperatureCard({ temperature }: CurrentTemperatureCardProps) {
-  const getWeatherIcon = (temp: number) => {
-    if (temp >= 30) return "sunny"
-    if (temp >= 25) return "partly-sunny"
-    if (temp >= 20) return "cloudy"
-    return "rainy"
+  const getRoastingIcon = (temp: number) => {
+    if (temp >= 220) return "flame"
+    if (temp >= 200) return "sunny"
+    if (temp >= 180) return "thermometer"
+    if (temp >= 150) return "water"
+    return "snow"
   }
 
-  const getWeatherColor = (temp: number): [string, string] => {
-    if (temp >= 30) return ["#FF6B6B", "#FF8E53"]
-    if (temp >= 25) return ["#4ECDC4", "#44A08D"]
-    if (temp >= 20) return ["#8ee2deff", "#e2bbc7ff"]
-    return ["#667eea", "#764ba2"]
+  const getRoastingColor = (temp: number): [string, string] => {
+    if (temp >= 220) return ["#8B4513", "#654321"]
+    if (temp >= 200) return ["#D2691E", "#A0522D"]
+    if (temp >= 180) return ["#DEB887", "#CD853F"]
+    if (temp >= 150) return ["#F4A460", "#DAA520"]
+    return ["#708090", "#2F4F4F"]
+  }
+
+  const getRoastingStatus = (temp: number) => {
+    if (temp >= 220) return "Torra Escura"
+    if (temp >= 200) return "Torra Média"
+    if (temp >= 180) return "Torra Clara"
+    if (temp >= 150) return "Pré-aquecimento"
+    return "Aguardando"
   }
 
   const { temperatureUnit } = useSettings();
@@ -38,15 +48,15 @@ export function CurrentTemperatureCard({ temperature }: CurrentTemperatureCardPr
     : temperature.valor;
 
   return (
-    <LinearGradient colors={getWeatherColor(temperature.valor)} style={styles.container}>
+    <LinearGradient colors={getRoastingColor(temperature.valor)} style={styles.container}>
       <View style={styles.content}>
         <View style={styles.upSection}>
-          <Ionicons name={getWeatherIcon(temperature.valor)} size={iconSize} color="white" />
+          <Ionicons name={getRoastingIcon(temperature.valor)} size={iconSize} color="white" />
           <Text style={styles.temperatureValue}>{displayTemp.toFixed(1)}{temperatureUnit}</Text>
         </View>
         <View style={styles.bottomSection}>
-          <Text style={styles.label}>Temperatura Atual</Text>
-          <Text style={styles.time}>{formatDistanceToNow(new Date(temperature.data), { locale: ptBR })} atrás</Text>
+          <Text style={styles.label}>{getRoastingStatus(temperature.valor)}</Text>
+          <Text style={styles.time}>Torra de Café • {formatDistanceToNow(new Date(temperature.data), { locale: ptBR })} atrás</Text>
         </View>
       </View>
     </LinearGradient>

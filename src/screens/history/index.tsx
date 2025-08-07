@@ -23,7 +23,7 @@ interface DryingSession {
 }
 
 // Gerar sessões baseadas nos dados reais
-const generateSessionsFromData = (temperatures: any[]) => {
+const generateSessionsFromData = (temperatures: any[], sessionDurationMinutes: number) => {
   if (!temperatures || temperatures.length === 0) return [];
 
   const sessions: DryingSession[] = [];
@@ -57,7 +57,7 @@ const generateSessionsFromData = (temperatures: any[]) => {
             maxTemperature: Math.max(...sessionTemps),
             minTemperature: Math.min(...sessionTemps),
             duration,
-            status: duration > 180 ? 'completed' : 'interrupted' // > 3h = completa
+            status: duration >= sessionDurationMinutes ? 'completed' : 'interrupted'
           });
           sessionId++;
         }
@@ -82,7 +82,7 @@ const generateSessionsFromData = (temperatures: any[]) => {
       maxTemperature: Math.max(...sessionTemps),
       minTemperature: Math.min(...sessionTemps),
       duration,
-      status: duration > 180 ? 'completed' : 'interrupted'
+      status: duration >= sessionDurationMinutes ? 'completed' : 'interrupted'
     });
   }
 
@@ -92,7 +92,7 @@ const generateSessionsFromData = (temperatures: any[]) => {
 
 export function History() {
   const theme = useTheme();
-  const { temperatureUnit } = useSettings();
+  const { temperatureUnit, sessionDuration } = useSettings();
 
   const { data: temperatureData, isLoading } = useQuery({
     queryKey: ['allTemperatures'],
@@ -100,7 +100,7 @@ export function History() {
     refetchInterval: 60000, // Atualizar a cada minuto
   });
 
-  const sessions = temperatureData ? generateSessionsFromData(temperatureData) : [];
+  const sessions = temperatureData ? generateSessionsFromData(temperatureData, sessionDuration) : [];
 
   const convertTemperature = (temp: number) => {
     return temperatureUnit === '°F' ? (temp * 9 / 5) + 32 : temp;

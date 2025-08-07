@@ -20,11 +20,13 @@ interface SettingsContextData {
   temperatureLimits: TemperatureLimits;
   temperatureUnit: '°C' | '°F';
   readingInterval: number;
+  sessionDuration: number;
   darkMode: boolean;
   notificationSettings: NotificationSettings;
   updateTemperatureLimits: (limits: TemperatureLimits) => void;
   updateTemperatureUnit: (unit: '°C' | '°F') => void;
   updateReadingInterval: (interval: number) => void;
+  updateSessionDuration: (duration: number) => void;
   toggleDarkMode: () => void;
   updateNotificationSettings: (settings: NotificationSettings) => void;
 }
@@ -35,6 +37,7 @@ const STORAGE_KEYS = {
   TEMPERATURE_LIMITS: '@settings:temperatureLimits',
   TEMPERATURE_UNIT: '@settings:temperatureUnit',
   READING_INTERVAL: '@settings:readingInterval',
+  SESSION_DURATION: '@settings:sessionDuration',
   DARK_MODE: '@settings:darkMode',
   NOTIFICATION_SETTINGS: '@settings:notificationSettings',
 };
@@ -51,6 +54,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   const [temperatureUnit, setTemperatureUnit] = useState<'°C' | '°F'>('°C');
   const [readingInterval, setReadingInterval] = useState(30000); // 30 segundos
+  const [sessionDuration, setSessionDuration] = useState(180); // 3 horas em minutos
   const [darkMode, setDarkMode] = useState(false);
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>({
     sound: true,
@@ -64,10 +68,11 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   const loadSettings = async () => {
     try {
-      const [limits, unit, interval, dark, notifications] = await Promise.all([
+      const [limits, unit, interval, duration, dark, notifications] = await Promise.all([
         AsyncStorage.getItem(STORAGE_KEYS.TEMPERATURE_LIMITS),
         AsyncStorage.getItem(STORAGE_KEYS.TEMPERATURE_UNIT),
         AsyncStorage.getItem(STORAGE_KEYS.READING_INTERVAL),
+        AsyncStorage.getItem(STORAGE_KEYS.SESSION_DURATION),
         AsyncStorage.getItem(STORAGE_KEYS.DARK_MODE),
         AsyncStorage.getItem(STORAGE_KEYS.NOTIFICATION_SETTINGS),
       ]);
@@ -75,6 +80,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       if (limits) setTemperatureLimits(JSON.parse(limits));
       if (unit) setTemperatureUnit(unit as '°C' | '°F');
       if (interval) setReadingInterval(parseInt(interval));
+      if (duration) setSessionDuration(parseInt(duration));
       if (dark) setDarkMode(JSON.parse(dark));
       if (notifications) setNotificationSettings(JSON.parse(notifications));
     } catch (error) {
@@ -97,6 +103,11 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     await AsyncStorage.setItem(STORAGE_KEYS.READING_INTERVAL, interval.toString());
   };
 
+  const updateSessionDuration = async (duration: number) => {
+    setSessionDuration(duration);
+    await AsyncStorage.setItem(STORAGE_KEYS.SESSION_DURATION, duration.toString());
+  };
+
   const toggleDarkMode = async () => {
     const newMode = !darkMode;
     setDarkMode(newMode);
@@ -114,11 +125,13 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         temperatureLimits,
         temperatureUnit,
         readingInterval,
+        sessionDuration,
         darkMode,
         notificationSettings,
         updateTemperatureLimits,
         updateTemperatureUnit,
         updateReadingInterval,
+        updateSessionDuration,
         toggleDarkMode,
         updateNotificationSettings,
       }}

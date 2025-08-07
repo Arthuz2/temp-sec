@@ -15,10 +15,12 @@ export function Settings() {
     temperatureLimits,
     temperatureUnit,
     readingInterval,
+    sessionDuration,
     darkMode,
     updateTemperatureLimits,
     updateTemperatureUnit,
     updateReadingInterval,
+    updateSessionDuration,
     toggleDarkMode,
   } = useSettings();
 
@@ -59,6 +61,16 @@ export function Settings() {
     { label: '5 minutos', value: 300000 },
   ];
 
+  const sessionDurationOptions = [
+    { label: '1 hora', value: 60 },
+    { label: '2 horas', value: 120 },
+    { label: '3 horas', value: 180 },
+    { label: '4 horas', value: 240 },
+    { label: '6 horas', value: 360 },
+    { label: '8 horas', value: 480 },
+    { label: '12 horas', value: 720 },
+  ];
+
   const showIntervalSelector = () => {
     const options = intervalOptions.map(option => ({
       text: option.label,
@@ -78,6 +90,27 @@ export function Settings() {
   const getCurrentInterval = () => {
     const current = intervalOptions.find(option => option.value === readingInterval);
     return current ? current.label : '30 segundos';
+  };
+
+  const showSessionDurationSelector = () => {
+    const options = sessionDurationOptions.map(option => ({
+      text: option.label,
+      onPress: () => updateSessionDuration(option.value)
+    }));
+
+    Alert.alert(
+      'Duração da Sessão',
+      'Escolha a duração mínima para considerar uma sessão completa:',
+      [
+        ...options,
+        { text: 'Cancelar', style: 'cancel' }
+      ]
+    );
+  };
+
+  const getCurrentSessionDuration = () => {
+    const current = sessionDurationOptions.find(option => option.value === sessionDuration);
+    return current ? current.label : '3 horas';
   };
 
   const saveLimits = () => {
@@ -117,10 +150,12 @@ export function Settings() {
     }
 
     const result = await exportToCSV(allTemperatures, []);
-    if (result.success) {
-      Alert.alert('Sucesso', `Dados exportados como ${result.fileName}`);
-    } else {
+    if (result && result.success) {
+      Alert.alert('Sucesso', `Dados exportados${'fileName' in result && result.fileName ? ` como ${result.fileName}` : ''}`);
+    } else if (result) {
       Alert.alert('Erro', `Falha ao exportar: ${result.error}`);
+    } else {
+      Alert.alert('Erro', 'Falha ao exportar: resultado indefinido');
     }
   };
 
@@ -255,6 +290,21 @@ export function Settings() {
                 </Text>
                 <Text style={[styles.settingDescription, { color: theme.colors.textSecondary }]}>
                   {getCurrentInterval()}
+                </Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={theme.colors.textSecondary} />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.settingItem} onPress={showSessionDurationSelector}>
+            <View style={styles.settingInfo}>
+              <Ionicons name="hourglass" size={20} color={theme.colors.text} />
+              <View style={styles.settingText}>
+                <Text style={[styles.settingLabel, { color: theme.colors.text }]}>
+                  Duração da Sessão
+                </Text>
+                <Text style={[styles.settingDescription, { color: theme.colors.textSecondary }]}>
+                  {getCurrentSessionDuration()}
                 </Text>
               </View>
             </View>

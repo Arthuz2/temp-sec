@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as TaskManager from 'expo-task-manager';
@@ -103,38 +102,72 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
     }
   };
 
+  const sendNotificationWithCurrentLimits = async (currentTemp: Temperature, currentLimits: any, currentNotificationSettings: any) => {
+    if (currentNotificationSettings.popup) {
+      let notificationMessage = `Temperatura atual: ${currentTemp.valor}°C.`;
+
+      if (currentTemp.valor < currentLimits.min) {
+        notificationMessage = `Alerta: Temperatura muito baixa! ${notificationMessage}`;
+      } else if (currentTemp.valor > currentLimits.max) {
+        notificationMessage = `Alerta: Temperatura muito alta! ${notificationMessage}`;
+      } else if (currentTemp.valor < currentLimits.ideal.min) {
+        notificationMessage = `Atenção: Temperatura abaixo do ideal. ${notificationMessage}`;
+      } else if (currentTemp.valor > currentLimits.ideal.max) {
+        notificationMessage = `Atenção: Temperatura acima do ideal. ${notificationMessage}`;
+      }
+
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: 'Alerta de Temperatura',
+          body: notificationMessage,
+        },
+        trigger: null, // Notificação imediata
+      });
+
+      console.log('Notificação enviada:', notificationMessage);
+    } else {
+      console.log('Notificação desabilitada nas configurações');
+    }
+  };
+
   const checkForNewTemperature = async () => {
     try {
       const currentTemp = await getLastTemperature();
 
-      // Verificar se é uma nova temperatura e se não foi notificada recentemente
-      const currentTempTime = new Date(currentTemp.data).getTime();
-      const lastNotifiedTime = lastNotifiedTemp ? new Date(lastNotifiedTemp.data).getTime() : 0;
+      if (!lastNotifiedTemp || new Date(currentTemp.data).getTime() !== new Date(lastNotifiedTemp.data).getTime()) {
+        const timeDifference = lastNotifiedTemp
+          ? new Date(currentTemp.data).getTime() - new Date(lastNotifiedTemp.data).getTime()
+          : Infinity;
 
-      // Adicionar debounce de 10 segundos para evitar notificações duplicadas
-      const timeDifference = currentTempTime - lastNotifiedTime;
+        // Só notificar se passou mais de 30 segundos desde a última notificação
+        if (timeDifference >= 30000) {
+          console.log('Nova temperatura detectada:', currentTemp);
 
-      if (timeDifference > 10000) { // 10 segundos de diferença mínima
-        // Verificar configurações de notificação
-        const notificationSettings = await AsyncStorage.getItem('@settings:notificationSettings');
-        const settings = notificationSettings ? JSON.parse(notificationSettings) : {
-          sound: true,
-          vibration: true,
-          popup: true
-        };
+          // Importar o hook de notificações com os limites atualizados
+          const { useNotifications } = require('../hooks/useNotifications');
+          const { useSettings } = require('../contexts/SettingsContext');
 
-        // Apenas enviar notificação se pop-up estiver habilitado
-        if (settings.popup) {
-          await sendLocalNotification(currentTemp);
-          console.log('Nova notificação enviada:', currentTemp.valor + '°C');
+          // Simular o contexto do hook para ter acesso aos limites atuais
+          const storedLimits = await AsyncStorage.getItem('@settings:temperatureLimits');
+          const storedNotificationSettings = await AsyncStorage.getItem('@settings:notificationSettings');
+
+          const currentLimits = storedLimits ? JSON.parse(storedLimits) : {
+            min: 15, max: 45, ideal: { min: 35, max: 40 }
+          };
+          const currentNotificationSettings = storedNotificationSettings ? JSON.parse(storedNotificationSettings) : {
+            sound: true, vibration: true, popup: true
+          };
+
+          // Enviar notificação com os limites atuais
+          await sendNotificationWithCurrentLimits(currentTemp, currentLimits, currentNotificationSettings);
+
+          console.log('Notificação enviada com sucesso para temperatura:', currentTemp.valor + '°C');
         } else {
-          console.log('Notificação desabilitada nas configurações');
+          console.log('Notificação ignorada (muito recente):', timeDifference + 'ms');
         }
 
         setLastNotifiedTemp(currentTemp);
         await AsyncStorage.setItem(LAST_NOTIFIED_TEMP_KEY, JSON.stringify(currentTemp));
-      } else {
-        console.log('Notificação ignorada (muito recente):', timeDifference + 'ms');
       }
     } catch (error) {
       console.error('Erro ao verificar nova temperatura:', error);

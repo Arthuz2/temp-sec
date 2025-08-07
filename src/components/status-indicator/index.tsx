@@ -54,7 +54,7 @@ export function StatusIndicator({ temperature }: StatusIndicatorProps) {
         color: '#2ed573',
         icon: 'checkmark-circle',
         text: 'Ideal',
-        description: 'Temperatura perfeita para secagem'
+        description: 'Temperatura perfeita'
       };
     }
 

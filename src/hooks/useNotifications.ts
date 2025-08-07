@@ -80,21 +80,24 @@ export function useNotifications() {
     let type: 'high' | 'low' | 'normal' = 'normal';
     let message = `Temperatura registrada: ${temperatureValue}°C às ${timeAgo}`;
     console.log('Enviando notificação local:', message);
+    console.log('Limites atuais:', temperatureLimits);
 
     if (temperatureValue >= temperatureLimits.max) {
       icon = "🔥";
       priority = Notifications.AndroidNotificationPriority.HIGH;
       type = 'high';
-      message = `ALERTA: Temperatura muito alta! ${temperatureValue}°C registrados às ${timeAgo}`;
+      message = `ALERTA: Temperatura muito alta! ${temperatureValue}°C registrados às ${timeAgo} (Limite: ${temperatureLimits.max}°C)`;
     } else if (temperatureValue <= temperatureLimits.min) {
       icon = "❄️";
       priority = Notifications.AndroidNotificationPriority.HIGH;
       type = 'low';
-      message = `ALERTA: Temperatura muito baixa! ${temperatureValue}°C registrados às ${timeAgo}`;
+      message = `ALERTA: Temperatura muito baixa! ${temperatureValue}°C registrados às ${timeAgo} (Limite: ${temperatureLimits.min}°C)`;
     } else if (temperatureValue >= temperatureLimits.ideal.min && temperatureValue <= temperatureLimits.ideal.max) {
       icon = "☀️";
+      message = `Temperatura ideal: ${temperatureValue}°C às ${timeAgo}`;
     } else {
       icon = "🌤️";
+      message = `Temperatura registrada: ${temperatureValue}°C às ${timeAgo}`;
     }
 
     await Notifications.scheduleNotificationAsync({
