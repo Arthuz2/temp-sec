@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useTheme } from '../../hooks/useTheme';
 import styles from './styles';
 
 interface WelcomeScreenProps {
@@ -12,7 +11,6 @@ interface WelcomeScreenProps {
 
 export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
   const [currentStep, setCurrentStep] = useState(0);
-  const theme = useTheme();
 
   const tutorialSteps = [
     {

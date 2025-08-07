@@ -23,21 +23,17 @@ const NotificationContext = createContext<NotificationContextType | null>(null);
 const BACKGROUND_FETCH_TASK = 'temperature-background-fetch';
 const LAST_NOTIFIED_TEMP_KEY = 'lastNotifiedTemperature';
 
-// Definir a tarefa em background
 TaskManager.defineTask(BACKGROUND_FETCH_TASK, async () => {
   try {
     const currentTemp = await getLastTemperature();
     const lastNotifiedTempStr = await AsyncStorage.getItem(LAST_NOTIFIED_TEMP_KEY);
     const lastNotifiedTemp = lastNotifiedTempStr ? JSON.parse(lastNotifiedTempStr) : null;
 
-    // Verificar se é uma nova temperatura
     if (!lastNotifiedTemp || new Date(currentTemp.data).getTime() !== new Date(lastNotifiedTemp.data).getTime()) {
-      // Enviar notificação
       const { sendLocalNotification } = require('../hooks/useNotifications');
       const notificationHook = { sendLocalNotification };
       await notificationHook.sendLocalNotification(currentTemp);
 
-      // Salvar a nova temperatura como última notificada
       await AsyncStorage.setItem(LAST_NOTIFIED_TEMP_KEY, JSON.stringify(currentTemp));
     }
 
@@ -55,7 +51,6 @@ interface NotificationProviderProps {
 export function NotificationProvider({ children }: NotificationProviderProps) {
   const [lastNotifiedTemp, setLastNotifiedTemp] = useState<Temperature | null>(null);
   const [isBackgroundTaskRegistered, setIsBackgroundTaskRegistered] = useState(false);
-  const { sendLocalNotification } = useNotifications();
 
   useEffect(() => {
     loadLastNotifiedTemp();
@@ -84,7 +79,6 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
 
   const registerBackgroundTask = async () => {
     try {
-      // Verificar se já está registrada
       const isRegistered = await TaskManager.isTaskRegisteredAsync(BACKGROUND_FETCH_TASK);
 
       if (!isRegistered) {
@@ -143,11 +137,6 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
         if (timeDifference >= 30000) {
           console.log('Nova temperatura detectada:', currentTemp);
 
-          // Importar o hook de notificações com os limites atualizados
-          const { useNotifications } = require('../hooks/useNotifications');
-          const { useSettings } = require('../contexts/SettingsContext');
-
-          // Simular o contexto do hook para ter acesso aos limites atuais
           const storedLimits = await AsyncStorage.getItem('@settings:temperatureLimits');
           const storedNotificationSettings = await AsyncStorage.getItem('@settings:notificationSettings');
 
@@ -158,7 +147,6 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
             sound: true, vibration: true, popup: true
           };
 
-          // Enviar notificação com os limites atuais
           await sendNotificationWithCurrentLimits(currentTemp, currentLimits, currentNotificationSettings);
 
           console.log('Notificação enviada com sucesso para temperatura:', currentTemp.valor + '°C');

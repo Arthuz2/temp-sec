@@ -12,7 +12,6 @@ import { StatsContainer } from "../../components/stats-container";
 import { TemperatureChart } from "../../components/temperature-chart";
 import { ToastContainer } from "../../components/toast-container";
 import { StatusIndicator } from "../../components/status-indicator";
-import { useTemperatureDetection } from "../../hooks/useTemperatureDetection";
 import { useToast } from "../../hooks/useToast";
 import { useTheme } from "../../hooks/useTheme";
 import { useSettings } from "../../contexts/SettingsContext";
@@ -122,7 +121,6 @@ export function Home() {
             hasError={!!errorAll}
           />
 
-          {/* Informações Complementares */}
           <View style={styles.infoSection}>
 
             <View style={[styles.infoCard, { backgroundColor: theme.colors.surface, shadowColor: theme.colors.cardShadow }]}>
@@ -133,7 +131,6 @@ export function Home() {
                 </Text>
               </View>
               <Text style={[styles.infoValue, { color: theme.colors.primary }]}>
-                {/* Usar limites dinâmicos do settings */}
                 {(() => {
                   const { temperatureLimits, temperatureUnit } = useSettings();
                   const convertTemp = (temp: number) => temperatureUnit === '°F' ? (temp * 9 / 5) + 32 : temp;

@@ -17,7 +17,6 @@ export function useTemperatureMonitor() {
   const appState = useRef(AppState.currentState);
   const lastNotificationTime = useRef<string | null>(null);
 
-  // Query para monitorar temperatura em tempo real
   const { data: currentTemp, refetch } = useQuery<Temperature>({
     queryKey: ['temperatureMonitor'],
     queryFn: getLastTemperature,
@@ -26,7 +25,6 @@ export function useTemperatureMonitor() {
     enabled: true,
   });
 
-  // Query para obter histórico completo
   const { data: allTemperatures, refetch: refetchAllTemperatures } = useQuery<Temperature[]>({
     queryKey: ['allTemperatures'],
     queryFn: getAllTemperature,
@@ -35,12 +33,10 @@ export function useTemperatureMonitor() {
   });
 
   useEffect(() => {
-    // Registrar tarefa em background na primeira execução
     if (!isBackgroundTaskRegistered) {
       registerBackgroundTask();
     }
 
-    // Monitorar mudanças no estado do app
     const subscription = AppState.addEventListener('change', handleAppStateChange);
 
     return () => {
@@ -49,7 +45,6 @@ export function useTemperatureMonitor() {
   }, [isBackgroundTaskRegistered]);
 
   useEffect(() => {
-    // Verificar nova temperatura apenas se for diferente da última notificação
     if (currentTemp && currentTemp.data !== lastNotificationTime.current) {
       lastNotificationTime.current = currentTemp.data;
       checkForNewTemperature();
@@ -58,8 +53,6 @@ export function useTemperatureMonitor() {
 
   const handleAppStateChange = (nextAppState: AppStateStatus) => {
     if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
-      // App voltou para foreground - apenas refetch, não verificar notificação
-      console.log('App voltou para foreground - atualizando dados');
       refetch();
     }
     appState.current = nextAppState;

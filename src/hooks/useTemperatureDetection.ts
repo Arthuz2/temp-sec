@@ -14,7 +14,7 @@ interface TemperatureStatus {
   message: string;
 }
 
-export function useTemperatureDetection(currentTemp?: Temperature, allTemperatures?: Temperature[]) {
+export function useTemperatureDetection(currentTemp?: Temperature) {
   const { sendLocalNotification } = useNotifications();
   const { showToast } = useToast();
   const previousTempRef = useRef<Temperature | null>(null);
@@ -44,14 +44,7 @@ export function useTemperatureDetection(currentTemp?: Temperature, allTemperatur
 
       lastNotificationRef.current = temperature.data;
 
-      // Enviar notificação local
       await sendLocalNotification(temperature);
-
-      // Determinar tipo de toast baseado na temperatura
-      const timeAgo = new Date(temperature.data).toLocaleTimeString("pt-BR", {
-        hour: "2-digit",
-        minute: "2-digit",
-      });
 
       const temperatureStatus = getTemperatureStatus(temperature);
       let message = temperatureStatus.message;
@@ -84,7 +77,6 @@ export function useTemperatureDetection(currentTemp?: Temperature, allTemperatur
     const temp = temperature.valor;
     const { min, max, ideal } = temperatureLimits;
 
-    // Converter para unidade de exibição
     const convertTemp = (temp: number) => temperatureUnit === '°F' ? (temp * 9 / 5) + 32 : temp;
     const displayTemp = convertTemp(temp);
     const displayMin = convertTemp(min);

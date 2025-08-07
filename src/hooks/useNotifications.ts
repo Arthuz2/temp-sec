@@ -17,7 +17,6 @@ interface NotificationAlert {
   message: string;
 }
 
-// Configurar o comportamento das notificações
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldPlaySound: true,
@@ -45,7 +44,6 @@ export function useNotifications() {
         message
       };
 
-      // Adicionar no início da lista e manter apenas os últimos 100
       const updatedHistory = [newAlert, ...history].slice(0, 100);
       await AsyncStorage.setItem('alertHistory', JSON.stringify(updatedHistory));
     } catch (error) {

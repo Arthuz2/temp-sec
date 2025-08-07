@@ -16,7 +16,6 @@ export function useToast() {
 
     setToasts((prev) => [...prev, newToast])
 
-    // Auto remove after duration
     setTimeout(() => {
       setToasts((prev) => prev.filter((toast) => toast.id !== id))
     }, duration)

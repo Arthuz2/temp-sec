@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Alert, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -104,7 +103,6 @@ export function Alerts() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      {/* Header */}
       <View style={[styles.header, { backgroundColor: theme.colors.surface, borderBottomColor: theme.colors.border }]}>
         <Ionicons name="notifications" size={24} color={theme.colors.primary} />
         <Text style={[styles.title, { color: theme.colors.text }]}>
@@ -113,7 +111,6 @@ export function Alerts() {
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Configurações de Notificação */}
         <View style={[styles.section, { backgroundColor: theme.colors.surface }]}>
           <View style={styles.sectionHeader}>
             <Ionicons name="settings" size={20} color={theme.colors.primary} />
@@ -183,7 +180,6 @@ export function Alerts() {
           </View>
         </View>
 
-        {/* Histórico de Alertas */}
         <View style={[styles.section, { backgroundColor: theme.colors.surface }]}>
           <View style={styles.sectionHeader}>
             <Ionicons name="time" size={20} color={theme.colors.primary} />
@@ -237,7 +233,6 @@ export function Alerts() {
           )}
         </View>
 
-        {/* Estatísticas de Alertas */}
         {alertHistory.length > 0 && (
           <View style={[styles.section, { backgroundColor: theme.colors.surface }]}>
             <View style={styles.sectionHeader}>

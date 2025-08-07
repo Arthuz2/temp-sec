@@ -22,7 +22,6 @@ interface DryingSession {
   status: 'completed' | 'interrupted' | 'ongoing';
 }
 
-// Gerar sessões baseadas nos dados reais
 const generateSessionsFromData = (temperatures: any[], sessionDurationMinutes: number) => {
   if (!temperatures || temperatures.length === 0) return [];
 
@@ -86,7 +85,7 @@ const generateSessionsFromData = (temperatures: any[], sessionDurationMinutes: n
     });
   }
 
-  return sessions.reverse(); // Mais recentes primeiro
+  return sessions.reverse();
 };
 
 
