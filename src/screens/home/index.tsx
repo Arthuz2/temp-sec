@@ -12,11 +12,35 @@ import { StatsContainer } from "../../components/stats-container";
 import { TemperatureChart } from "../../components/temperature-chart";
 import { ToastContainer } from "../../components/toast-container";
 import { StatusIndicator } from "../../components/status-indicator";
-import { useTemperatureDetection } from "../../hooks/useTemperatureDetection";
 import { useToast } from "../../hooks/useToast";
 import { useTheme } from "../../hooks/useTheme";
 import { useSettings } from "../../contexts/SettingsContext";
 import styles from "./styles";
+
+function IdealRangeCard() {
+  const theme = useTheme();
+  const { temperatureLimits, temperatureUnit } = useSettings();
+
+  const convertTemp = (temp: number) => temperatureUnit === '°F' ? (temp * 9 / 5) + 32 : temp;
+  const minIdeal = convertTemp(temperatureLimits.ideal.min).toFixed(1);
+  const maxIdeal = convertTemp(temperatureLimits.ideal.max).toFixed(1);
+
+  return (
+    <View style={styles.infoSection}>
+      <View style={[styles.infoCard, { backgroundColor: theme.colors.surface, shadowColor: theme.colors.cardShadow }]}>
+        <View style={styles.infoRow}>
+          <Ionicons name="flame-outline" size={24} color={theme.colors.primary} />
+          <Text style={[styles.infoLabel, { color: theme.colors.text }]}>
+            Faixa Ideal de Torra
+          </Text>
+        </View>
+        <Text style={[styles.infoValue, { color: theme.colors.primary }]}>
+          {minIdeal}{temperatureUnit} - {maxIdeal}{temperatureUnit}
+        </Text>
+      </View>
+    </View>
+  );
+}
 
 interface Temperature {
   data: string;
@@ -122,28 +146,7 @@ export function Home() {
             hasError={!!errorAll}
           />
 
-          {/* Informações Complementares */}
-          <View style={styles.infoSection}>
-
-            <View style={[styles.infoCard, { backgroundColor: theme.colors.surface, shadowColor: theme.colors.cardShadow }]}>
-              <View style={styles.infoRow}>
-                <Ionicons name="settings-outline" size={24} color={theme.colors.primary} />
-                <Text style={[styles.infoLabel, { color: theme.colors.text }]}>
-                  Faixa Ideal Programada
-                </Text>
-              </View>
-              <Text style={[styles.infoValue, { color: theme.colors.primary }]}>
-                {/* Usar limites dinâmicos do settings */}
-                {(() => {
-                  const { temperatureLimits, temperatureUnit } = useSettings();
-                  const convertTemp = (temp: number) => temperatureUnit === '°F' ? (temp * 9 / 5) + 32 : temp;
-                  const minIdeal = convertTemp(temperatureLimits.ideal.min).toFixed(1);
-                  const maxIdeal = convertTemp(temperatureLimits.ideal.max).toFixed(1);
-                  return `${minIdeal}${temperatureUnit} - ${maxIdeal}${temperatureUnit}`;
-                })()}
-              </Text>
-            </View>
-          </View>
+          <IdealRangeCard />
         </ScrollView>
       )}
 

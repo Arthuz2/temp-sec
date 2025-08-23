@@ -17,11 +17,10 @@ interface NotificationAlert {
   message: string;
 }
 
-// Configurar o comportamento das notificações
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldPlaySound: true,
-    shouldSetBadge: false,
+    shouldSetBadge: true,
     shouldShowBanner: true,
     shouldShowList: true,
   }),
@@ -34,8 +33,18 @@ export function useNotifications() {
 
   const saveAlertToHistory = async (temperature: Temperature, type: 'high' | 'low' | 'normal', message: string) => {
     try {
+      if (type !== 'high' && type !== 'low') {
+        return;
+      }
+
       const existingHistory = await AsyncStorage.getItem('alertHistory');
       const history: NotificationAlert[] = existingHistory ? JSON.parse(existingHistory) : [];
+
+      const today = new Date().toDateString();
+      const todayAlerts = history.filter(alert => {
+        const alertDate = new Date(alert.timestamp).toDateString();
+        return alertDate === today;
+      });
 
       const newAlert: NotificationAlert = {
         id: `${Date.now()}_${Math.random()}`,
@@ -45,8 +54,7 @@ export function useNotifications() {
         message
       };
 
-      // Adicionar no início da lista e manter apenas os últimos 100
-      const updatedHistory = [newAlert, ...history].slice(0, 100);
+      const updatedHistory = [newAlert, ...todayAlerts].slice(0, 100);
       await AsyncStorage.setItem('alertHistory', JSON.stringify(updatedHistory));
     } catch (error) {
       console.error('Erro ao salvar alerta no histórico:', error);
@@ -110,6 +118,8 @@ export function useNotifications() {
           type: "new_temperature",
         },
         sound: notificationSettings.sound ? "default" : false,
+        badge: 1,
+        priority: Notifications.AndroidNotificationPriority.MAX,
       },
       trigger: null, // Enviar imediatamente
       identifier: `temp_${Date.now()}`,
@@ -128,10 +138,13 @@ async function registerForPushNotificationsAsync() {
     await Notifications.setNotificationChannelAsync("temperature-alerts", {
       name: "Alertas de Temperatura",
       description: "Notificações sobre novas leituras de temperatura",
-      importance: Notifications.AndroidImportance.DEFAULT,
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: "#667eea",
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 500, 500, 500],
+      lightColor: "#FF6B6B",
       sound: "default",
+      enableLights: true,
+      enableVibrate: true,
+      showBadge: true,
     });
   }
 

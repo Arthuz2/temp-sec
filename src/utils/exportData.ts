@@ -1,5 +1,6 @@
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
+import * as Print from 'expo-print';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -21,75 +22,167 @@ interface DryingSession {
 
 export const exportToCSV = async (
   data: Temperature[],
-  sessions: DryingSession[]
+  sessionDurationMinutes: number = 120
 ) => {
   try {
-    // Corrigir datas
-    const sessionsFormatted = sessions.map(session => ({
-      ...session,
-      startDate: new Date(session.startDate),
-      endDate: new Date(session.endDate),
-    }));
+    const sessions = generateSessionsFromData(data, sessionDurationMinutes);
 
-    let csvContent = 'RELATÓRIO DE MONITORAMENTO TEMPSEC\n';
-    csvContent += `Gerado em: ${format(new Date(), 'dd/MM/yyyy HH:mm:ss', { locale: ptBR })}\n\n`;
+    const DELIM = ';';
+    const EOL = '\r\n';
 
-    csvContent += '===============================\n';
-    csvContent += '📊 Temperaturas Registradas\n';
-    csvContent += '===============================\n';
-    csvContent += 'Data/Hora,Temperatura (°C)\n';
-    data.forEach(temp => {
-      const formattedDate = format(new Date(temp.data), 'dd/MM/yyyy HH:mm:ss', { locale: ptBR });
-      csvContent += `${formattedDate},${temp.valor.toFixed(1)}\n`;
+    // Funções utilitárias
+    const fmtNumber = (n: number, digits = 1) =>
+      n.toLocaleString('pt-BR', { minimumFractionDigits: digits, maximumFractionDigits: digits, useGrouping: false });
+
+    const csvEscape = (value: unknown) => {
+      // Converte para string, remove quebras (mantém CSV de uma linha por registro) e escapa aspas
+      const s = String(value ?? '').replace(/\r?\n/g, ' ').replace(/"/g, '""');
+      // Sempre que tiver aspas, separador, vírgula ou espaço “suspeito”, envolve em aspas
+      return /[";\,]/.test(s) ? `"${s}"` : s;
+    };
+
+    const row = (cols: unknown[]) => cols.map(csvEscape).join(DELIM) + EOL;
+    let csv = '';
+
+    // Cabeçalho informativo (linhas soltas são ok; vão só na 1ª coluna)
+    csv += row(['Relatorio de Monitoramento TempSec']);
+    csv += row([`Gerado em: ${format(new Date(), 'dd/MM/yyyy HH:mm:ss', { locale: ptBR })}`]);
+    csv += EOL;
+
+    // ===== Temperaturas Registradas =====
+    csv += row(['Temperaturas Registradas']);
+    csv += row(['Data/Hora', 'Temperatura (°C)']);
+
+    for (const t of data) {
+      const dt = format(new Date(t.data), 'dd/MM/yyyy HH:mm:ss', { locale: ptBR });
+      csv += row([dt, fmtNumber(t.valor)]);
+    }
+
+    csv += EOL;
+
+    // ===== Sessões de Secagem =====
+    csv += row(['Sessoes de Secagem']);
+    csv += row(['ID', 'Data Inicio', 'Data Fim', 'Temp. Media (°C)', 'Temp. Max (°C)', 'Temp. Min (°C)', 'Duracao (min)', 'Status']);
+
+    for (const s of sessions) {
+      const start = format(new Date(s.startDate), 'dd/MM/yyyy HH:mm', { locale: ptBR });
+      const end = format(new Date(s.endDate), 'dd/MM/yyyy HH:mm', { locale: ptBR });
+      const status = s.status === 'completed' ? 'Concluida' : s.status === 'interrupted' ? 'Interrompida' : 'Em andamento';
+
+      csv += row([
+        s.id,
+        start,
+        end,
+        fmtNumber(s.avgTemperature),
+        fmtNumber(s.maxTemperature),
+        fmtNumber(s.minTemperature),
+        s.duration,
+        status,
+      ]);
+    }
+
+    const fileName = `tempsec_dados_${format(new Date(), 'yyyy-MM-dd_HH-mm-ss')}.csv`;
+    const fileUri = FileSystem.documentDirectory + fileName;
+
+    await FileSystem.writeAsStringAsync(fileUri, csv, {
+      encoding: FileSystem.EncodingType.UTF8,
     });
 
-    csvContent += '\n\n';
-    csvContent += '===============================\n';
-    csvContent += '🛠️ Sessões de Secagem\n';
-    csvContent += '===============================\n';
-    csvContent += 'ID,Data Início,Data Fim,Temp. Média (°C),Temp. Máx (°C),Temp. Mín (°C),Duração (min),Status\n';
+    if (await Sharing.isAvailableAsync()) {
+      await Sharing.shareAsync(fileUri, {
+        mimeType: 'text/csv; charset=utf-8',
+        dialogTitle: 'Exportar dados TempSec',
+      });
+    }
 
-    sessionsFormatted.forEach(session => {
-      const start = format(session.startDate, 'dd/MM/yyyy HH:mm', { locale: ptBR });
-      const end = format(session.endDate, 'dd/MM/yyyy HH:mm', { locale: ptBR });
-      const status = session.status === 'completed' ? 'Concluída' : session.status === 'interrupted' ? 'Interrompida' : 'Em andamento';
-      csvContent += `${session.id},${start},${end},${session.avgTemperature.toFixed(1)},${session.maxTemperature.toFixed(1)},${session.minTemperature.toFixed(1)},${session.duration},${status}\n`;
-    });
-
-    console.log(sessionsFormatted);
-    console.log('CSV Content:', csvContent);
-
-    // const fileName = `tempsec_dados_${format(new Date(), 'yyyy-MM-dd_HH-mm-ss')}.csv`;
-    // const fileUri = FileSystem.documentDirectory + fileName;
-
-    // await FileSystem.writeAsStringAsync(fileUri, csvContent, {
-    //   encoding: FileSystem.EncodingType.UTF8,
-    // });
-
-    // if (await Sharing.isAvailableAsync()) {
-    //   await Sharing.shareAsync(fileUri, {
-    //     mimeType: 'text/csv',
-    //     dialogTitle: 'Exportar dados TempSec',
-    //   });
-    // }
-
-    // return { success: true, fileName };
+    return { success: true, fileName };
   } catch (error) {
     console.error('Erro ao exportar CSV:', error);
     return { success: false, error: (error as Error).message };
   }
 };
 
+const generateSessionsFromData = (temperatures: Temperature[], sessionDurationMinutes: number = 120) => {
+  if (!temperatures || temperatures.length === 0) return [];
+
+  const sessions: DryingSession[] = [];
+  const sortedTemps = [...temperatures].sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime());
+
+  let currentSession: Temperature[] = [];
+  let sessionId = 1;
+
+  for (let i = 0; i < sortedTemps.length; i++) {
+    const current = sortedTemps[i];
+    const currentTime = new Date(current.data).getTime();
+
+    if (currentSession.length === 0) {
+      currentSession.push(current);
+    } else {
+      const lastTime = new Date(currentSession[currentSession.length - 1].data).getTime();
+      const timeDiff = (currentTime - lastTime) / (1000 * 60 * 60); // horas
+
+      if (timeDiff > 2) {
+        if (currentSession.length > 3) { // Mínimo 3 leituras para ser uma sessão
+          const sessionTemps = currentSession.map(t => t.valor);
+          const startDate = new Date(currentSession[0].data);
+          const endDate = new Date(currentSession[currentSession.length - 1].data);
+          const duration = Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60));
+
+          sessions.push({
+            id: sessionId.toString(),
+            startDate,
+            endDate,
+            avgTemperature: Math.round((sessionTemps.reduce((a, b) => a + b, 0) / sessionTemps.length) * 10) / 10,
+            maxTemperature: Math.max(...sessionTemps),
+            minTemperature: Math.min(...sessionTemps),
+            duration,
+            status: duration >= sessionDurationMinutes ? 'completed' : 'interrupted'
+          });
+          sessionId++;
+        }
+        currentSession = [current];
+      } else {
+        currentSession.push(current);
+      }
+    }
+  }
+
+  // Processar última sessão se existir
+  if (currentSession.length > 3) {
+    const sessionTemps = currentSession.map(t => t.valor);
+    const startDate = new Date(currentSession[0].data);
+    const endDate = new Date(currentSession[currentSession.length - 1].data);
+    const duration = Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60));
+
+    sessions.push({
+      id: sessionId.toString(),
+      startDate,
+      endDate,
+      avgTemperature: Math.round((sessionTemps.reduce((a, b) => a + b, 0) / sessionTemps.length) * 10) / 10,
+      maxTemperature: Math.max(...sessionTemps),
+      minTemperature: Math.min(...sessionTemps),
+      duration,
+      status: duration >= sessionDurationMinutes ? 'completed' : 'interrupted'
+    });
+  }
+
+  return sessions.reverse(); // Mais recentes primeiro
+};
+
 export const generatePDFReport = async (
   data: Temperature[],
-  sessions: DryingSession[]
+  sessionDurationMinutes: number = 120
 ) => {
   try {
-    const sessionsFormatted = sessions.map(session => ({
-      ...session,
-      startDate: new Date(session.startDate),
-      endDate: new Date(session.endDate),
-    }));
+    // Gerar sessões a partir dos dados de temperatura
+    const sessions = generateSessionsFromData(data, sessionDurationMinutes);
+
+    console.log('Sessões geradas para PDF:', sessions.length);
+
+    // Calcular estatísticas
+    const maxTemp = data.length > 0 ? Math.max(...data.map(t => t.valor)) : 0;
+    const minTemp = data.length > 0 ? Math.min(...data.map(t => t.valor)) : 0;
+    const avgTemp = data.length > 0 ? data.reduce((acc, t) => acc + t.valor, 0) / data.length : 0;
 
     const htmlContent = `
       <!DOCTYPE html>
@@ -106,6 +199,10 @@ export const generatePDFReport = async (
             th { background-color: #e9ecef; }
             .stats { display: flex; justify-content: space-around; margin-bottom: 20px; }
             .stat-card { background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.1); border-radius: 8px; padding: 20px; width: 30%; text-align: center; }
+            .session-status { padding: 4px 8px; border-radius: 4px; color: white; font-size: 12px; }
+            .status-completed { background-color: #28a745; }
+            .status-interrupted { background-color: #dc3545; }
+            .status-active { background-color: #007bff; }
           </style>
         </head>
         <body>
@@ -118,15 +215,15 @@ export const generatePDFReport = async (
             <h2>Resumo Estatístico</h2>
             <div class="stats">
               <div class="stat-card">
-                <h3>${Math.max(...data.map(t => t.valor)).toFixed(1)}°C</h3>
+                <h3>${maxTemp.toFixed(1)}°C</h3>
                 <p>Temperatura Máxima</p>
               </div>
               <div class="stat-card">
-                <h3>${Math.min(...data.map(t => t.valor)).toFixed(1)}°C</h3>
+                <h3>${minTemp.toFixed(1)}°C</h3>
                 <p>Temperatura Mínima</p>
               </div>
               <div class="stat-card">
-                <h3>${(data.reduce((acc, t) => acc + t.valor, 0) / data.length).toFixed(1)}°C</h3>
+                <h3>${avgTemp.toFixed(1)}°C</h3>
                 <p>Temperatura Média</p>
               </div>
             </div>
@@ -148,18 +245,24 @@ export const generatePDFReport = async (
                 </tr>
               </thead>
               <tbody>
-                ${sessionsFormatted.map(session => `
-                  <tr>
-                    <td>${format(session.startDate, 'dd/MM/yyyy', { locale: ptBR })}</td>
-                    <td>${format(session.startDate, 'HH:mm')}</td>
-                    <td>${format(session.endDate, 'HH:mm')}</td>
-                    <td>${Math.floor(session.duration / 60)}h ${session.duration % 60}min</td>
-                    <td>${session.avgTemperature.toFixed(1)}°C</td>
-                    <td>${session.maxTemperature.toFixed(1)}°C</td>
-                    <td>${session.minTemperature.toFixed(1)}°C</td>
-                    <td>${session.status === 'completed' ? 'Concluída' : session.status === 'interrupted' ? 'Interrompida' : 'Em andamento'}</td>
-                  </tr>
-                `).join('')}
+                ${sessions.length > 0 ? sessions.map(session => {
+      const statusText = session.status === 'completed' ? 'Concluída' :
+        session.status === 'interrupted' ? 'Interrompida' : 'Em andamento';
+      const statusClass = session.status === 'completed' ? 'status-completed' :
+        session.status === 'interrupted' ? 'status-interrupted' : 'status-active';
+      return `
+                    <tr>
+                      <td>${format(session.startDate, 'dd/MM/yyyy', { locale: ptBR })}</td>
+                      <td>${format(session.startDate, 'HH:mm')}</td>
+                      <td>${format(session.endDate, 'HH:mm')}</td>
+                      <td>${Math.floor(session.duration / 60)}h ${session.duration % 60}min</td>
+                      <td>${session.avgTemperature.toFixed(1)}°C</td>
+                      <td>${session.maxTemperature.toFixed(1)}°C</td>
+                      <td>${session.minTemperature.toFixed(1)}°C</td>
+                      <td><span class="session-status ${statusClass}">${statusText}</span></td>
+                    </tr>
+                  `;
+    }).join('') : '<tr><td colspan="8">Nenhuma sessão de torra registrada</td></tr>'}
               </tbody>
             </table>
           </div>
@@ -167,17 +270,25 @@ export const generatePDFReport = async (
       </html>
     `;
 
-    const fileName = `tempsec_relatorio_${format(new Date(), 'yyyy-MM-dd_HH-mm-ss')}.html`;
-    const fileUri = FileSystem.documentDirectory + fileName;
+    // Gerar PDF usando expo-print
+    const { uri } = await Print.printToFileAsync({
+      html: htmlContent,
+      base64: false
+    });
 
-    await FileSystem.writeAsStringAsync(fileUri, htmlContent, {
-      encoding: FileSystem.EncodingType.UTF8,
+    const fileName = `tempsec_relatorio_${format(new Date(), 'yyyy-MM-dd_HH-mm-ss')}.pdf`;
+    const pdfUri = `${FileSystem.documentDirectory}${fileName}`;
+
+    // Mover o arquivo gerado para o local desejado
+    await FileSystem.moveAsync({
+      from: uri,
+      to: pdfUri
     });
 
     if (await Sharing.isAvailableAsync()) {
-      await Sharing.shareAsync(fileUri, {
-        mimeType: 'text/html',
-        dialogTitle: 'Exportar relatório TempSec',
+      await Sharing.shareAsync(pdfUri, {
+        mimeType: 'application/pdf',
+        dialogTitle: 'Exportar relatório TempSec PDF',
       });
     }
 

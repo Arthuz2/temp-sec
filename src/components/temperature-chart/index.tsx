@@ -20,7 +20,7 @@ export function TemperatureChart({ temperatures, avgTemp, hasError = false }: Te
   const theme = useTheme();
   const { temperatureUnit } = useSettings();
 
-  const recentTemps = temperatures.slice(-12); // Últimas 12 medições
+  const recentTemps = temperatures.filter(t => new Date(t.data).toDateString() === new Date().toDateString());
   let maxValue = Math.max(...recentTemps.map((t) => t.valor))
   let minValue = Math.min(...recentTemps.map((t) => t.valor))
   if (maxValue === -Infinity || minValue === Infinity) {
@@ -37,7 +37,6 @@ export function TemperatureChart({ temperatures, avgTemp, hasError = false }: Te
     const convertedTemp = convertTemperature(temp);
     const { temperatureLimits } = useSettings();
 
-    // Converter limites para a unidade atual
     const convertedLimits = {
       min: convertTemperature(temperatureLimits.min),
       max: convertTemperature(temperatureLimits.max),
@@ -51,7 +50,7 @@ export function TemperatureChart({ temperatures, avgTemp, hasError = false }: Te
     if (convertedTemp >= convertedLimits.max) return "#ff4757" // Vermelho - muito alto
     if (convertedTemp >= convertedLimits.ideal.min && convertedTemp <= convertedLimits.ideal.max) return "#2ed573" // Verde - ideal
     if (convertedTemp < convertedLimits.ideal.min) return "#70a1ff" // Azul claro - baixo
-    return "#ffa502" // Laranja - altoaixo
+    return "#ffa502" // Laranja - atenção
   }
 
   return (

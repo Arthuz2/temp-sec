@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "https://agroshow-api.onrender.com",
+  baseURL: "http://54.232.67.242:5000",
   timeout: 10000,
   headers: {
     "Content-Type": "application/json",

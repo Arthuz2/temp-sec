@@ -31,7 +31,7 @@ export default StyleSheet.create({
   statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginBottom: 20,
+    marginBottom: 5,
     paddingVertical: 10,
     borderRadius: 8,
     backgroundColor: 'rgba(0,0,0,0.03)',
@@ -72,7 +72,7 @@ export default StyleSheet.create({
   },
   svgChart: {
     position: 'absolute',
-    top: 20,
+    top: 34,
     left: 0,
   },
   labelsContainer: {
@@ -88,13 +88,11 @@ export default StyleSheet.create({
   chartValue: {
     fontSize: width * 0.028,
     fontWeight: '500',
-    marginBottom: 8,
     textAlign: 'center',
   },
 
   chartDate: {
     fontSize: width * 0.024,
-    marginTop: 8,
     textAlign: 'center',
     lineHeight: 14,
   },
@@ -122,7 +120,7 @@ export default StyleSheet.create({
   legendContainer: {
     flexDirection: "row",
     justifyContent: "space-around",
-    marginTop: 15,
+    marginTop: 6,
     paddingTop: 15,
     borderTopWidth: 1,
     borderTopColor: "rgba(0,0,0,0.1)",

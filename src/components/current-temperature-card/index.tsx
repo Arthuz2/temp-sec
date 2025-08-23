@@ -16,33 +16,32 @@ interface CurrentTemperatureCardProps {
 }
 
 export function CurrentTemperatureCard({ temperature }: CurrentTemperatureCardProps) {
+  const { temperatureLimits, temperatureUnit } = useSettings()
+
   const getRoastingIcon = (temp: number) => {
-    if (temp >= 220) return "flame"
-    if (temp >= 200) return "sunny"
-    if (temp >= 180) return "thermometer"
-    if (temp >= 150) return "water"
+    if (temp >= temperatureLimits.max) return "flame"
+    if (temp >= temperatureLimits.ideal.max) return "sunny"
+    if (temp >= temperatureLimits.ideal.min) return "thermometer"
+    if (temp >= temperatureLimits.min) return "water"
     return "snow"
   }
 
   const getRoastingColor = (temp: number): [string, string] => {
-    if (temp >= 220) return ["#8B4513", "#654321"]
-    if (temp >= 200) return ["#D2691E", "#A0522D"]
-    if (temp >= 180) return ["#DEB887", "#CD853F"]
-    if (temp >= 150) return ["#F4A460", "#DAA520"]
+    if (temp >= temperatureLimits.max) return ["#8B4513", "#654321"]
+    if (temp >= temperatureLimits.ideal.max) return ["#D2691E", "#A0522D"]
+    if (temp >= temperatureLimits.ideal.min) return ["#DEB887", "#CD853F"]
+    if (temp >= temperatureLimits.min) return ["#F4A460", "#DAA520"]
     return ["#708090", "#2F4F4F"]
   }
 
   const getRoastingStatus = (temp: number) => {
-    if (temp >= 220) return "Torra Escura"
-    if (temp >= 200) return "Torra Média"
-    if (temp >= 180) return "Torra Clara"
-    if (temp >= 150) return "Pré-aquecimento"
+    if (temp >= temperatureLimits.max) return "Torra Escura"
+    if (temp >= temperatureLimits.ideal.max) return "Torra Média"
+    if (temp >= temperatureLimits.ideal.min) return "Torra Clara"
+    if (temp >= temperatureLimits.min) return "Pré-aquecimento"
     return "Aguardando"
   }
 
-  const { temperatureUnit } = useSettings();
-
-  // Converter temperatura baseado na unidade
   const displayTemp = temperatureUnit === '°F'
     ? (temperature.valor * 9 / 5) + 32
     : temperature.valor;

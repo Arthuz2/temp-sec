@@ -20,12 +20,13 @@ export function StatsContainer({ temperatures }: StatsContainerProps) {
     return null;
   }
 
-  const values = temperatures.map(t => t.valor);
+  const todayTemperatures = temperatures.filter(t => new Date(t.data).toDateString() === new Date().toDateString());
+
+  const values = todayTemperatures.map(t => t.valor);
   const maxTemp = Math.max(...values);
   const minTemp = Math.min(...values);
   const avgTemp = values.reduce((sum, temp) => sum + temp, 0) / values.length;
 
-  // Converter temperaturas baseado na unidade
   const convertTemp = (temp: number) =>
     temperatureUnit === '°F' ? (temp * 9 / 5) + 32 : temp;
 

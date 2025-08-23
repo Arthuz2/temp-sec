@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, Switch, TouchableOpacity, Alert, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,11 +23,9 @@ export function Settings() {
     toggleDarkMode,
   } = useSettings();
 
-  // Funções de conversão
   const celsiusToFahrenheit = (celsius: number) => (celsius * 9 / 5) + 32;
   const fahrenheitToCelsius = (fahrenheit: number) => (fahrenheit - 32) * 5 / 9;
 
-  // Estados locais com conversão baseada na unidade
   const getDisplayTemp = (temp: number) =>
     temperatureUnit === '°F' ? celsiusToFahrenheit(temp) : temp;
 
@@ -38,14 +35,12 @@ export function Settings() {
   const [idealMaxTemp, setIdealMaxTemp] = useState(getDisplayTemp(temperatureLimits.ideal.max).toFixed(1));
   const [isEditing, setIsEditing] = useState(false);
 
-  // Query para obter dados para exportação
   const { data: allTemperatures } = useQuery({
     queryKey: ['allTemperatures'],
     queryFn: getAllTemperature,
     enabled: false, // Só carrega quando necessário
   });
 
-  // Atualizar valores quando a unidade mudar
   useEffect(() => {
     setMinTemp(getDisplayTemp(temperatureLimits.min).toFixed(1));
     setMaxTemp(getDisplayTemp(temperatureLimits.max).toFixed(1));
@@ -114,7 +109,6 @@ export function Settings() {
   };
 
   const saveLimits = () => {
-    // Converter valores para Celsius se estiver em Fahrenheit
     const convertToStorage = (temp: number) =>
       temperatureUnit === '°F' ? fahrenheitToCelsius(temp) : temp;
 
@@ -127,7 +121,6 @@ export function Settings() {
       }
     };
 
-    // Validação usando valores convertidos
     if (newLimits.min >= newLimits.max) {
       Alert.alert('Erro', 'A temperatura mínima deve ser menor que a máxima');
       return;
@@ -144,32 +137,38 @@ export function Settings() {
   };
 
   const handleExportCSV = async () => {
-    if (!allTemperatures || allTemperatures.length === 0) {
-      Alert.alert('Aviso', 'Não há dados para exportar');
+    if (!allTemperatures) {
+      Alert.alert('Erro', 'Nenhum dado disponível para exportar');
       return;
     }
 
-    const result = await exportToCSV(allTemperatures, []);
-    if (result && result.success) {
-      Alert.alert('Sucesso', `Dados exportados${'fileName' in result && result.fileName ? ` como ${result.fileName}` : ''}`);
-    } else if (result) {
-      Alert.alert('Erro', `Falha ao exportar: ${result.error}`);
-    } else {
-      Alert.alert('Erro', 'Falha ao exportar: resultado indefinido');
+    try {
+      const result = await exportToCSV(allTemperatures, sessionDuration);
+      if (result.success) {
+        Alert.alert('Sucesso', `Dados exportados: ${result.fileName}`);
+      } else {
+        Alert.alert('Erro', result.error || 'Falha ao exportar dados');
+      }
+    } catch (error) {
+      Alert.alert('Erro', 'Falha ao exportar dados CSV');
     }
   };
 
   const handleGenerateReport = async () => {
-    if (!allTemperatures || allTemperatures.length === 0) {
-      Alert.alert('Aviso', 'Não há dados para gerar relatório');
+    if (!allTemperatures) {
+      Alert.alert('Erro', 'Nenhum dado disponível para exportar');
       return;
     }
 
-    const result = await generatePDFReport(allTemperatures, []);
-    if (result.success) {
-      Alert.alert('Sucesso', `Relatório gerado como ${result.fileName}`);
-    } else {
-      Alert.alert('Erro', `Falha ao gerar relatório: ${result.error}`);
+    try {
+      const result = await generatePDFReport(allTemperatures, sessionDuration);
+      if (result.success) {
+        Alert.alert('Sucesso', `Relatório gerado: ${result.fileName}`);
+      } else {
+        Alert.alert('Erro', result.error || 'Falha ao gerar relatório');
+      }
+    } catch (error) {
+      Alert.alert('Erro', 'Falha ao gerar relatório PDF');
     }
   };
 
@@ -218,7 +217,7 @@ export function Settings() {
                   Gerar Relatório
                 </Text>
                 <Text style={[styles.settingDescription, { color: theme.colors.textSecondary }]}>
-                  Relatório completo em HTML
+                  Relatório completo em PDF
                 </Text>
               </View>
             </View>

@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { View, Text, ScrollView, FlatList, TouchableOpacity } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -18,11 +17,10 @@ interface DryingSession {
   avgTemperature: number;
   maxTemperature: number;
   minTemperature: number;
-  duration: number; // em minutos
+  duration: number;
   status: 'completed' | 'interrupted' | 'ongoing';
 }
 
-// Gerar sessões baseadas nos dados reais
 const generateSessionsFromData = (temperatures: any[], sessionDurationMinutes: number) => {
   if (!temperatures || temperatures.length === 0) return [];
 

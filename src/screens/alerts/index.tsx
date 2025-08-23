@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Alert, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -28,12 +27,32 @@ export function Alerts() {
     loadAlertHistory();
   }, []);
 
+  useEffect(() => {
+    const interval = setInterval(loadAlertHistory, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
   const loadAlertHistory = async () => {
     try {
       const stored = await AsyncStorage.getItem('alertHistory');
       if (stored) {
-        const history = JSON.parse(stored);
-        setAlertHistory(history.slice(0, 50)); // Últimos 50 alertas
+        const history: NotificationAlert[] = JSON.parse(stored);
+
+        const today = new Date().toDateString();
+        const todayAlerts = history.filter(alert => {
+          const alertDate = new Date(alert.timestamp).toDateString();
+          return alertDate === today;
+        });
+
+        const criticalAlerts = todayAlerts.filter(alert =>
+          alert.type === 'high' || alert.type === 'low'
+        );
+
+        setAlertHistory(criticalAlerts.slice(0, 50));
+
+        if (todayAlerts.length === 0 && history.length > 0) {
+          await AsyncStorage.setItem('alertHistory', JSON.stringify([]));
+        }
       }
     } catch (error) {
       console.error('Erro ao carregar histórico de alertas:', error);
@@ -201,10 +220,10 @@ export function Alerts() {
             <View style={styles.emptyState}>
               <Ionicons name="notifications-off" size={48} color={theme.colors.textSecondary} />
               <Text style={[styles.emptyStateText, { color: theme.colors.textSecondary }]}>
-                Nenhum alerta registrado
+                Nenhum alerta crítico hoje
               </Text>
               <Text style={[styles.emptyStateSubtext, { color: theme.colors.textSecondary }]}>
-                Os alertas de temperatura aparecerão aqui
+                Alertas de temperatura fora do ideal aparecerão aqui
               </Text>
             </View>
           ) : (
@@ -243,7 +262,7 @@ export function Alerts() {
             <View style={styles.sectionHeader}>
               <Ionicons name="stats-chart" size={20} color={theme.colors.primary} />
               <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-                Estatísticas
+                Estatísticas de Hoje
               </Text>
             </View>
 
@@ -253,7 +272,7 @@ export function Alerts() {
                   {alertHistory.filter(a => a.type === 'high').length}
                 </Text>
                 <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>
-                  Alta Temperatura
+                  Temperatura Alta
                 </Text>
               </View>
               <View style={styles.statItem}>
@@ -261,15 +280,15 @@ export function Alerts() {
                   {alertHistory.filter(a => a.type === 'low').length}
                 </Text>
                 <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>
-                  Baixa Temperatura
+                  Temperatura Baixa
                 </Text>
               </View>
               <View style={styles.statItem}>
-                <Text style={[styles.statNumber, { color: theme.colors.success }]}>
-                  {alertHistory.filter(a => a.type === 'normal').length}
+                <Text style={[styles.statNumber, { color: theme.colors.text }]}>
+                  {alertHistory.length}
                 </Text>
                 <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>
-                  Normal
+                  Total Críticos
                 </Text>
               </View>
             </View>
