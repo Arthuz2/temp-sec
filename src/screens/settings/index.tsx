@@ -182,7 +182,6 @@ export function Settings() {
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
 
-        {/* Seção Exportação */}
         <View style={[styles.section, { backgroundColor: theme.colors.surface }]}>
           <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
             Exportação de Dados
@@ -225,7 +224,6 @@ export function Settings() {
           </TouchableOpacity>
         </View>
 
-        {/* Seção Aparência */}
         <View style={[styles.section, { backgroundColor: theme.colors.surface }]}>
           <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
             Aparência
@@ -256,7 +254,6 @@ export function Settings() {
           </View>
         </View>
 
-        {/* Seção Temperatura */}
         <View style={[styles.section, { backgroundColor: theme.colors.surface }]}>
           <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
             Configurações de Temperatura
@@ -311,7 +308,6 @@ export function Settings() {
           </TouchableOpacity>
         </View>
 
-        {/* Seção Limites */}
         <View style={[styles.section, { backgroundColor: theme.colors.surface }]}>
           <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
             Limites de Temperatura
@@ -434,7 +430,6 @@ export function Settings() {
           )}
         </View>
 
-        {/* Seção Sobre */}
         <View style={[styles.section, { backgroundColor: theme.colors.surface }]}>
           <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
             Sobre o App
@@ -442,17 +437,16 @@ export function Settings() {
 
           <View style={styles.aboutInfo}>
             <Text style={[styles.appName, { color: theme.colors.text }]}>
-              TempSec - Monitor de Secagem
+              TempSec - Monitor de Temperatura
             </Text>
             <Text style={[styles.appVersion, { color: theme.colors.textSecondary }]}>
               Versão 1.0.0
             </Text>
             <Text style={[styles.appDescription, { color: theme.colors.textSecondary }]}>
-              Aplicativo para monitoramento de temperatura durante processos de secagem agrícola.
+              Aplicativo para monitoramento de temperatura.
             </Text>
           </View>
         </View>
-
       </ScrollView>
     </View>
   );

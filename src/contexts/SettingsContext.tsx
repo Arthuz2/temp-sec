@@ -44,11 +44,11 @@ const STORAGE_KEYS = {
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
   const [temperatureLimits, setTemperatureLimits] = useState<TemperatureLimits>({
-    min: 15,
-    max: 45,
+    min: 160,
+    max: 250,
     ideal: {
-      min: 35,
-      max: 40
+      min: 180,
+      max: 240
     }
   });
 

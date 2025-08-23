@@ -1,4 +1,3 @@
-
 import { useSettings } from '../contexts/SettingsContext';
 
 export interface Theme {

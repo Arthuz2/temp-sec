@@ -84,7 +84,7 @@ const generateSessionsFromData = (temperatures: any[], sessionDurationMinutes: n
     });
   }
 
-  return sessions.reverse(); // Mais recentes primeiro
+  return sessions.reverse();
 };
 
 
