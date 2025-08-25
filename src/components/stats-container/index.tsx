@@ -30,9 +30,15 @@ export function StatsContainer({ temperatures }: StatsContainerProps) {
   const convertTemp = (temp: number) =>
     temperatureUnit === '°F' ? (temp * 9 / 5) + 32 : temp;
 
-  const displayMaxTemp = convertTemp(maxTemp);
-  const displayMinTemp = convertTemp(minTemp);
-  const displayAvgTemp = convertTemp(avgTemp);
+  let displayMaxTemp = convertTemp(maxTemp);
+  let displayMinTemp = convertTemp(minTemp);
+  let displayAvgTemp = convertTemp(avgTemp);
+
+  if (displayMaxTemp === -Infinity || displayMinTemp === Infinity || isNaN(displayAvgTemp)) {
+    displayMaxTemp = 0;
+    displayMinTemp = 0;
+    displayAvgTemp = 0;
+  }
 
   return (
     <View style={styles.container}>

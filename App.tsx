@@ -4,7 +4,7 @@ import { StatusBar } from "expo-status-bar";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SettingsProvider, useSettings } from "./src/contexts/SettingsContext";
-import { NotificationProvider } from "./src/contexts/NotificationContext";
+import { NotificationProvider, useNotificationContext } from "./src/contexts/NotificationContext";
 import { useTemperatureMonitor } from "./src/hooks/useTemperatureMonitor";
 import { Home } from "./src/screens/home";
 import { History } from "./src/screens/history";
@@ -12,9 +12,12 @@ import { Alerts } from "./src/screens/alerts";
 import { Settings } from "./src/screens/settings";
 import { WelcomeScreen } from "./src/screens/welcome";
 import { TabBar, TabName } from "./src/components/navigation/TabBar";
+import * as BackgroundFetch from 'expo-background-fetch';
+import * as TaskManager from 'expo-task-manager';
 
 function AppContent() {
   const { darkMode } = useSettings();
+  const { isBackgroundTaskRegistered, registerBackgroundTask } = useNotificationContext();
   const [activeTab, setActiveTab] = useState<TabName>('home');
   const [showWelcome, setShowWelcome] = useState<boolean | null>(null);
 
@@ -45,7 +48,7 @@ function AppContent() {
   };
 
   if (showWelcome === null) {
-    return null; // Loading state
+    return null;
   }
 
   if (showWelcome) {
@@ -87,7 +90,33 @@ function AppContent() {
 }
 
 export default function App() {
-  const queryClient = new QueryClient();
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        staleTime: 1000 * 60,
+        refetchOnWindowFocus: true,
+      },
+    },
+  });
+
+  useEffect(() => {
+    const configureBackgroundFetch = async () => {
+      try {
+        const status = await BackgroundFetch.getStatusAsync();
+
+        if (status === BackgroundFetch.BackgroundFetchStatus.Available) {
+
+          await BackgroundFetch.setMinimumIntervalAsync(15);
+        } else {
+          console.warn('Background fetch não disponível:', status);
+        }
+      } catch (error) {
+        console.error('Erro ao configurar background fetch:', error);
+      }
+    };
+
+    configureBackgroundFetch();
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>

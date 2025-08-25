@@ -18,7 +18,7 @@ interface TemperatureChartProps {
 
 export function TemperatureChart({ temperatures, avgTemp, hasError = false }: TemperatureChartProps) {
   const theme = useTheme();
-  const { temperatureUnit } = useSettings();
+  const { temperatureUnit, temperatureLimits } = useSettings();
 
   const recentTemps = temperatures.filter(t => new Date(t.data).toDateString() === new Date().toDateString());
   let maxValue = Math.max(...recentTemps.map((t) => t.valor))
@@ -35,7 +35,6 @@ export function TemperatureChart({ temperatures, avgTemp, hasError = false }: Te
 
   const getBarColor = (temp: number) => {
     const convertedTemp = convertTemperature(temp);
-    const { temperatureLimits } = useSettings();
 
     const convertedLimits = {
       min: convertTemperature(temperatureLimits.min),
@@ -46,11 +45,11 @@ export function TemperatureChart({ temperatures, avgTemp, hasError = false }: Te
       }
     };
 
-    if (convertedTemp <= convertedLimits.min) return "#3742fa" // Azul - muito baixo
-    if (convertedTemp >= convertedLimits.max) return "#ff4757" // Vermelho - muito alto
-    if (convertedTemp >= convertedLimits.ideal.min && convertedTemp <= convertedLimits.ideal.max) return "#2ed573" // Verde - ideal
-    if (convertedTemp < convertedLimits.ideal.min) return "#70a1ff" // Azul claro - baixo
-    return "#ffa502" // Laranja - atenção
+    if (convertedTemp <= convertedLimits.min) return "#3742fa"
+    if (convertedTemp >= convertedLimits.max) return "#ff4757"
+    if (convertedTemp >= convertedLimits.ideal.min && convertedTemp <= convertedLimits.ideal.max) return "#2ed573"
+    if (convertedTemp < convertedLimits.ideal.min) return "#70a1ff"
+    return "#ffa502"
   }
 
   return (

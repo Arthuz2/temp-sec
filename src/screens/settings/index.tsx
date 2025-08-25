@@ -38,7 +38,7 @@ export function Settings() {
   const { data: allTemperatures } = useQuery({
     queryKey: ['allTemperatures'],
     queryFn: getAllTemperature,
-    enabled: false, // Só carrega quando necessário
+    enabled: false,
   });
 
   useEffect(() => {

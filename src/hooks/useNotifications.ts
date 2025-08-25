@@ -1,20 +1,10 @@
 import { useEffect, useRef } from "react";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useSettings } from "../contexts/SettingsContext";
 
 interface Temperature {
   data: string;
   valor: number;
-}
-
-interface NotificationAlert {
-  id: string;
-  timestamp: string;
-  temperature: number;
-  type: 'high' | 'low' | 'normal';
-  message: string;
 }
 
 Notifications.setNotificationHandler({
@@ -27,39 +17,8 @@ Notifications.setNotificationHandler({
 });
 
 export function useNotifications() {
-  const { notificationSettings, temperatureLimits } = useSettings();
   const notificationListener = useRef<Notifications.Subscription | null>(null);
   const responseListener = useRef<Notifications.Subscription | null>(null);
-
-  const saveAlertToHistory = async (temperature: Temperature, type: 'high' | 'low' | 'normal', message: string) => {
-    try {
-      if (type !== 'high' && type !== 'low') {
-        return;
-      }
-
-      const existingHistory = await AsyncStorage.getItem('alertHistory');
-      const history: NotificationAlert[] = existingHistory ? JSON.parse(existingHistory) : [];
-
-      const today = new Date().toDateString();
-      const todayAlerts = history.filter(alert => {
-        const alertDate = new Date(alert.timestamp).toDateString();
-        return alertDate === today;
-      });
-
-      const newAlert: NotificationAlert = {
-        id: `${Date.now()}_${Math.random()}`,
-        timestamp: temperature.data,
-        temperature: temperature.valor,
-        type,
-        message
-      };
-
-      const updatedHistory = [newAlert, ...todayAlerts].slice(0, 100);
-      await AsyncStorage.setItem('alertHistory', JSON.stringify(updatedHistory));
-    } catch (error) {
-      console.error('Erro ao salvar alerta no histórico:', error);
-    }
-  };
 
   useEffect(() => {
     registerForPushNotificationsAsync();
@@ -76,85 +35,61 @@ export function useNotifications() {
     };
   }, []);
 
-  const sendLocalNotification = async (temperature: Temperature) => {
-    const temperatureValue = temperature.valor;
-    const timeAgo = new Date(temperature.data).toLocaleTimeString("pt-BR", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-
-    let icon = "🌡️";
-    let priority = Notifications.AndroidNotificationPriority.DEFAULT;
-    let type: 'high' | 'low' | 'normal' = 'normal';
-    let message = `Temperatura registrada: ${temperatureValue}°C às ${timeAgo}`;
-    console.log('Enviando notificação local:', message);
-    console.log('Limites atuais:', temperatureLimits);
-
-    if (temperatureValue >= temperatureLimits.max) {
-      icon = "🔥";
-      priority = Notifications.AndroidNotificationPriority.HIGH;
-      type = 'high';
-      message = `ALERTA: Temperatura muito alta! ${temperatureValue}°C registrados às ${timeAgo} (Limite: ${temperatureLimits.max}°C)`;
-    } else if (temperatureValue <= temperatureLimits.min) {
-      icon = "❄️";
-      priority = Notifications.AndroidNotificationPriority.HIGH;
-      type = 'low';
-      message = `ALERTA: Temperatura muito baixa! ${temperatureValue}°C registrados às ${timeAgo} (Limite: ${temperatureLimits.min}°C)`;
-    } else if (temperatureValue >= temperatureLimits.ideal.min && temperatureValue <= temperatureLimits.ideal.max) {
-      icon = "☀️";
-      message = `Temperatura ideal: ${temperatureValue}°C às ${timeAgo}`;
-    } else {
-      icon = "🌤️";
-      message = `Temperatura registrada: ${temperatureValue}°C às ${timeAgo}`;
-    }
-
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: `${icon} Nova Temperatura Registrada`,
-        body: message,
-        data: {
-          temperature: temperatureValue,
-          timestamp: temperature.data,
-          type: "new_temperature",
-        },
-        sound: notificationSettings.sound ? "default" : false,
-        badge: 1,
-        priority: Notifications.AndroidNotificationPriority.MAX,
-      },
-      trigger: null, // Enviar imediatamente
-      identifier: `temp_${Date.now()}`,
-    });
-
-    await saveAlertToHistory(temperature, type, message);
-  };
+  const sendLocalNotification = async (temperature: Temperature) => { };
 
   return { sendLocalNotification };
 }
 
 async function registerForPushNotificationsAsync() {
-  let token;
+  try {
+    if (Platform.OS === "android") {
+      await Notifications.setNotificationChannelAsync("critical-alerts", {
+        name: "Alertas Críticos de Temperatura",
+        description: "Notificações de temperatura fora dos limites seguros",
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 500, 500, 500],
+        lightColor: "#FF4757",
+        sound: "default",
+        enableLights: true,
+        enableVibrate: true,
+        showBadge: true,
+        bypassDnd: true,
+      });
 
-  if (Platform.OS === "android") {
-    await Notifications.setNotificationChannelAsync("temperature-alerts", {
-      name: "Alertas de Temperatura",
-      description: "Notificações sobre novas leituras de temperatura",
-      importance: Notifications.AndroidImportance.MAX,
-      vibrationPattern: [0, 500, 500, 500],
-      lightColor: "#FF6B6B",
-      sound: "default",
-      enableLights: true,
-      enableVibrate: true,
-      showBadge: true,
-    });
+      await Notifications.setNotificationChannelAsync("temperature-alerts", {
+        name: "Alertas de Temperatura",
+        description: "Notificações sobre novas leituras de temperatura",
+        importance: Notifications.AndroidImportance.HIGH,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: "#FF6B6B",
+        sound: "default",
+        enableLights: true,
+        enableVibrate: true,
+        showBadge: true,
+      });
+    }
+
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
+
+    if (existingStatus !== "granted") {
+      const { status } = await Notifications.requestPermissionsAsync({
+        ios: {
+          allowAlert: true,
+          allowBadge: true,
+          allowSound: true,
+        },
+      });
+      finalStatus = status;
+    }
+
+    if (finalStatus !== "granted") {
+      console.warn("Permissão para notificações não concedida");
+      return null;
+    }
+    return finalStatus;
+  } catch (error) {
+    console.error("Erro ao registrar notificações:", error);
+    return null;
   }
-
-  const { status: existingStatus } = await Notifications.getPermissionsAsync();
-  let finalStatus = existingStatus;
-
-  if (existingStatus !== "granted") {
-    const { status } = await Notifications.requestPermissionsAsync();
-    finalStatus = status;
-  }
-
-  return token;
 }

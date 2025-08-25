@@ -4,6 +4,7 @@ import * as Print from 'expo-print';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
+// ----------------- Tipos -----------------
 interface Temperature {
   data: string;
   valor: number;
@@ -20,6 +21,7 @@ interface DryingSession {
   status: string;
 }
 
+// ----------------- Exportador CSV -----------------
 export const exportToCSV = async (
   data: Temperature[],
   sessionDurationMinutes: number = 120
@@ -30,44 +32,50 @@ export const exportToCSV = async (
     const DELIM = ';';
     const EOL = '\r\n';
 
-    // Funções utilitárias
+    // Formatacao numerica
     const fmtNumber = (n: number, digits = 1) =>
-      n.toLocaleString('pt-BR', { minimumFractionDigits: digits, maximumFractionDigits: digits, useGrouping: false });
+      n.toLocaleString('en-US', {
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits,
+        useGrouping: false,
+      });
 
+    // Escapar valores para CSV
     const csvEscape = (value: unknown) => {
-      // Converte para string, remove quebras (mantém CSV de uma linha por registro) e escapa aspas
       const s = String(value ?? '').replace(/\r?\n/g, ' ').replace(/"/g, '""');
-      // Sempre que tiver aspas, separador, vírgula ou espaço “suspeito”, envolve em aspas
-      return /[";\,]/.test(s) ? `"${s}"` : s;
+      return /[";,]/.test(s) ? `"${s}"` : s;
     };
 
     const row = (cols: unknown[]) => cols.map(csvEscape).join(DELIM) + EOL;
-    let csv = '';
 
-    // Cabeçalho informativo (linhas soltas são ok; vão só na 1ª coluna)
-    csv += row(['Relatorio de Monitoramento TempSec']);
+    // ---------- HEADER ----------
+    let csv = '';
+    csv += row(['RELATORIO DE MONITORAMENTO TEMPSEC']);
     csv += row([`Gerado em: ${format(new Date(), 'dd/MM/yyyy HH:mm:ss', { locale: ptBR })}`]);
     csv += EOL;
 
-    // ===== Temperaturas Registradas =====
-    csv += row(['Temperaturas Registradas']);
-    csv += row(['Data/Hora', 'Temperatura (°C)']);
-
+    // ---------- TEMPERATURAS ----------
+    csv += row(['TEMPERATURAS REGISTRADAS']);
+    csv += row(['Data_Hora', 'Temperatura_C']);
     for (const t of data) {
       const dt = format(new Date(t.data), 'dd/MM/yyyy HH:mm:ss', { locale: ptBR });
       csv += row([dt, fmtNumber(t.valor)]);
     }
-
     csv += EOL;
 
-    // ===== Sessões de Secagem =====
-    csv += row(['Sessoes de Secagem']);
-    csv += row(['ID', 'Data Inicio', 'Data Fim', 'Temp. Media (°C)', 'Temp. Max (°C)', 'Temp. Min (°C)', 'Duracao (min)', 'Status']);
+    // ---------- SESSOES DE SECAGEM ----------
+    csv += row(['SESSOES DE SECAGEM']);
+    csv += row(['ID', 'Data_Inicio', 'Data_Fim', 'Temp_Media_C', 'Temp_Max_C', 'Temp_Min_C', 'Duracao_min', 'Status']);
 
     for (const s of sessions) {
       const start = format(new Date(s.startDate), 'dd/MM/yyyy HH:mm', { locale: ptBR });
       const end = format(new Date(s.endDate), 'dd/MM/yyyy HH:mm', { locale: ptBR });
-      const status = s.status === 'completed' ? 'Concluida' : s.status === 'interrupted' ? 'Interrompida' : 'Em andamento';
+      const status =
+        s.status === 'completed'
+          ? 'Concluida'
+          : s.status === 'interrupted'
+            ? 'Interrompida'
+            : 'Em_andamento';
 
       csv += row([
         s.id,
@@ -81,6 +89,7 @@ export const exportToCSV = async (
       ]);
     }
 
+    // ---------- SALVAR ----------
     const fileName = `tempsec_dados_${format(new Date(), 'yyyy-MM-dd_HH-mm-ss')}.csv`;
     const fileUri = FileSystem.documentDirectory + fileName;
 
@@ -102,11 +111,17 @@ export const exportToCSV = async (
   }
 };
 
-const generateSessionsFromData = (temperatures: Temperature[], sessionDurationMinutes: number = 120) => {
+// ----------------- Gerador de sessoes -----------------
+const generateSessionsFromData = (
+  temperatures: Temperature[],
+  sessionDurationMinutes: number = 120
+) => {
   if (!temperatures || temperatures.length === 0) return [];
 
   const sessions: DryingSession[] = [];
-  const sortedTemps = [...temperatures].sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime());
+  const sortedTemps = [...temperatures].sort(
+    (a, b) => new Date(a.data).getTime() - new Date(b.data).getTime()
+  );
 
   let currentSession: Temperature[] = [];
   let sessionId = 1;
@@ -119,11 +134,11 @@ const generateSessionsFromData = (temperatures: Temperature[], sessionDurationMi
       currentSession.push(current);
     } else {
       const lastTime = new Date(currentSession[currentSession.length - 1].data).getTime();
-      const timeDiff = (currentTime - lastTime) / (1000 * 60 * 60); // horas
+      const timeDiff = (currentTime - lastTime) / (1000 * 60 * 60);
 
       if (timeDiff > 2) {
-        if (currentSession.length > 3) { // Mínimo 3 leituras para ser uma sessão
-          const sessionTemps = currentSession.map(t => t.valor);
+        if (currentSession.length > 3) {
+          const sessionTemps = currentSession.map((t) => t.valor);
           const startDate = new Date(currentSession[0].data);
           const endDate = new Date(currentSession[currentSession.length - 1].data);
           const duration = Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60));
@@ -132,11 +147,14 @@ const generateSessionsFromData = (temperatures: Temperature[], sessionDurationMi
             id: sessionId.toString(),
             startDate,
             endDate,
-            avgTemperature: Math.round((sessionTemps.reduce((a, b) => a + b, 0) / sessionTemps.length) * 10) / 10,
+            avgTemperature:
+              Math.round(
+                (sessionTemps.reduce((a, b) => a + b, 0) / sessionTemps.length) * 10
+              ) / 10,
             maxTemperature: Math.max(...sessionTemps),
             minTemperature: Math.min(...sessionTemps),
             duration,
-            status: duration >= sessionDurationMinutes ? 'completed' : 'interrupted'
+            status: duration >= sessionDurationMinutes ? 'completed' : 'interrupted',
           });
           sessionId++;
         }
@@ -147,9 +165,8 @@ const generateSessionsFromData = (temperatures: Temperature[], sessionDurationMi
     }
   }
 
-  // Processar última sessão se existir
   if (currentSession.length > 3) {
-    const sessionTemps = currentSession.map(t => t.valor);
+    const sessionTemps = currentSession.map((t) => t.valor);
     const startDate = new Date(currentSession[0].data);
     const endDate = new Date(currentSession[currentSession.length - 1].data);
     const duration = Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60));
@@ -158,15 +175,18 @@ const generateSessionsFromData = (temperatures: Temperature[], sessionDurationMi
       id: sessionId.toString(),
       startDate,
       endDate,
-      avgTemperature: Math.round((sessionTemps.reduce((a, b) => a + b, 0) / sessionTemps.length) * 10) / 10,
+      avgTemperature:
+        Math.round(
+          (sessionTemps.reduce((a, b) => a + b, 0) / sessionTemps.length) * 10
+        ) / 10,
       maxTemperature: Math.max(...sessionTemps),
       minTemperature: Math.min(...sessionTemps),
       duration,
-      status: duration >= sessionDurationMinutes ? 'completed' : 'interrupted'
+      status: duration >= sessionDurationMinutes ? 'completed' : 'interrupted',
     });
   }
 
-  return sessions.reverse(); // Mais recentes primeiro
+  return sessions.reverse();
 };
 
 export const generatePDFReport = async (
@@ -174,12 +194,8 @@ export const generatePDFReport = async (
   sessionDurationMinutes: number = 120
 ) => {
   try {
-    // Gerar sessões a partir dos dados de temperatura
     const sessions = generateSessionsFromData(data, sessionDurationMinutes);
 
-    console.log('Sessões geradas para PDF:', sessions.length);
-
-    // Calcular estatísticas
     const maxTemp = data.length > 0 ? Math.max(...data.map(t => t.valor)) : 0;
     const minTemp = data.length > 0 ? Math.min(...data.map(t => t.valor)) : 0;
     const avgTemp = data.length > 0 ? data.reduce((acc, t) => acc + t.valor, 0) / data.length : 0;
@@ -270,7 +286,7 @@ export const generatePDFReport = async (
       </html>
     `;
 
-    // Gerar PDF usando expo-print
+
     const { uri } = await Print.printToFileAsync({
       html: htmlContent,
       base64: false
@@ -279,7 +295,7 @@ export const generatePDFReport = async (
     const fileName = `tempsec_relatorio_${format(new Date(), 'yyyy-MM-dd_HH-mm-ss')}.pdf`;
     const pdfUri = `${FileSystem.documentDirectory}${fileName}`;
 
-    // Mover o arquivo gerado para o local desejado
+
     await FileSystem.moveAsync({
       from: uri,
       to: pdfUri

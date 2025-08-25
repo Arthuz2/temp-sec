@@ -14,7 +14,7 @@ function ToastItem({ toast, onRemove }: ToastItemProps) {
   const opacityAnim = useRef(new Animated.Value(0)).current
 
   useEffect(() => {
-    // Slide in animation
+
     Animated.parallel([
       Animated.timing(slideAnim, {
         toValue: 0,

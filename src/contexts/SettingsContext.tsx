@@ -53,8 +53,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   });
 
   const [temperatureUnit, setTemperatureUnit] = useState<'°C' | '°F'>('°C');
-  const [readingInterval, setReadingInterval] = useState(30000); // 30 segundos
-  const [sessionDuration, setSessionDuration] = useState(180); // 3 horas em minutos
+  const [readingInterval, setReadingInterval] = useState(30000);
+  const [sessionDuration, setSessionDuration] = useState(180);
   const [darkMode, setDarkMode] = useState(false);
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>({
     sound: true,

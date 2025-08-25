@@ -61,8 +61,8 @@ export function Home() {
     queryKey: ["temperature"],
     queryFn: getAllTemperature,
     retry: 2,
-    staleTime: 30 * 1000, // 30 segundos
-    refetchInterval: 60 * 1000, // 1 minuto
+    staleTime: 30 * 1000,
+    refetchInterval: 60 * 1000,
     refetchIntervalInBackground: true,
   });
 
@@ -75,8 +75,8 @@ export function Home() {
     queryKey: ["currentTemperature"],
     queryFn: getLastTemperature,
     retry: 2,
-    staleTime: 10 * 1000, // 10 segundos
-    refetchInterval: 30 * 1000, // 30 segundos
+    staleTime: 10 * 1000,
+    refetchInterval: 30 * 1000,
     refetchIntervalInBackground: true,
   });
 
@@ -118,8 +118,8 @@ export function Home() {
             <RefreshControl
               refreshing={isRefreshing}
               onRefresh={handleRefresh}
-              colors={[theme.colors.primary]} // Android
-              tintColor={theme.colors.primary} // iOS
+              colors={[theme.colors.primary]}
+              tintColor={theme.colors.primary}
               title="Atualizando temperaturas..."
               titleColor={theme.colors.primary}
               progressBackgroundColor={theme.colors.surface}

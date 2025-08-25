@@ -25,37 +25,28 @@ export function Alerts() {
 
   useEffect(() => {
     loadAlertHistory();
-  }, []);
 
-  useEffect(() => {
-    const interval = setInterval(loadAlertHistory, 60000);
+    const interval = setInterval(loadAlertHistory, 10000);
     return () => clearInterval(interval);
   }, []);
 
   const loadAlertHistory = async () => {
     try {
       const stored = await AsyncStorage.getItem('alertHistory');
+
       if (stored) {
         const history: NotificationAlert[] = JSON.parse(stored);
 
-        const today = new Date().toDateString();
-        const todayAlerts = history.filter(alert => {
-          const alertDate = new Date(alert.timestamp).toDateString();
-          return alertDate === today;
-        });
-
-        const criticalAlerts = todayAlerts.filter(alert =>
+        const criticalAlerts = history.filter(alert =>
           alert.type === 'high' || alert.type === 'low'
         );
 
         setAlertHistory(criticalAlerts.slice(0, 50));
-
-        if (todayAlerts.length === 0 && history.length > 0) {
-          await AsyncStorage.setItem('alertHistory', JSON.stringify([]));
-        }
+      } else {
+        setAlertHistory([]);
       }
     } catch (error) {
-      console.error('Erro ao carregar histórico de alertas:', error);
+      setAlertHistory([]);
     }
   };
 

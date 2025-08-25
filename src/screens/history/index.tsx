@@ -38,10 +38,10 @@ const generateSessionsFromData = (temperatures: any[], sessionDurationMinutes: n
       currentSession.push(current);
     } else {
       const lastTime = new Date(currentSession[currentSession.length - 1].data).getTime();
-      const timeDiff = (currentTime - lastTime) / (1000 * 60 * 60); // horas
+      const timeDiff = (currentTime - lastTime) / (1000 * 60 * 60);
 
       if (timeDiff > 2) {
-        if (currentSession.length > 3) { // Mínimo 3 leituras para ser uma sessão
+        if (currentSession.length > 3) {
           const sessionTemps = currentSession.map(t => t.valor);
           const startDate = new Date(currentSession[0].data);
           const endDate = new Date(currentSession[currentSession.length - 1].data);
@@ -95,7 +95,7 @@ export function History() {
   const { data: temperatureData, isLoading } = useQuery({
     queryKey: ['allTemperatures'],
     queryFn: getAllTemperature,
-    refetchInterval: 60000, // Atualizar a cada minuto
+    refetchInterval: 60000,
   });
 
   const sessions = temperatureData ? generateSessionsFromData(temperatureData, sessionDuration) : [];
